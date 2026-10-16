@@ -138,7 +138,9 @@ def main():
         "collegamenti": entries,
     }
     if c["apps_domain"]:
-        out["indirizzo"] = f"https://{t}.{c['apps_domain']}/"
+        # "apps.azienda.it" vuol dire https; un ambiente di sviluppo può dare "http://apps.localhost".
+        scheme, _, domain = c["apps_domain"].rpartition("://")
+        out["indirizzo"] = f"{scheme or 'https'}://{t}.{domain}/"
     if not out["ok"] and dep.get("logs"):
         out["log"] = dep["logs"][-3000:]
     print(json.dumps(out, ensure_ascii=False, indent=2))

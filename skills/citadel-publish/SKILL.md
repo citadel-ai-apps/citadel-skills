@@ -9,7 +9,7 @@ Tono **asciutto** con l'utente: esito, indirizzo, cosa resta da fare.
 
 ## 1. Configurazione
 
-Servono tre dati: l'indirizzo del portale Citadel (`url`), un token personale (`token`), il dominio delle app (`apps_domain`). Lo script li legge dalle variabili `CITADEL_URL`, `CITADEL_TOKEN` e `CITADEL_APPS_DOMAIN`, oppure da `~/.config/citadel/config.json`.
+Servono tre dati: l'indirizzo del portale Citadel (`url`), un token personale (`token`), il dominio delle app (`apps_domain`, per esempio `apps.azienda.it`; in sviluppo può includere lo schema, `http://apps.localhost`). Lo script li legge dalle variabili `CITADEL_URL`, `CITADEL_TOKEN` e `CITADEL_APPS_DOMAIN`, oppure da `~/.config/citadel/config.json`.
 
 Se mancano, chiedi all'utente indirizzo e dominio. Il **token lo salva l'utente**: lo riceve dall'operatore di Citadel, e tu gli dai il comando per scriverlo nel file con permessi 600. Il valore del token resta fuori dalla chat e da ogni output.
 
