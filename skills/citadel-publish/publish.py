@@ -4,7 +4,7 @@
     python3 publish.py <cartella pkg> --tenant <nome breve> [--dry-run]
 
 Configurazione, nell'ordine: variabili CITADEL_URL, CITADEL_TOKEN, CITADEL_APPS_DOMAIN,
-poi ~/.config/citadel/config.json con le chiavi url, token, apps_domain.
+poi il file CITADEL_CONFIG o ~/.config/citadel/config.json, con le chiavi url, token, apps_domain.
 Il token non viene mai stampato. Esce con 0 solo se il deploy è riuscito.
 """
 import argparse
@@ -23,7 +23,7 @@ EPOCH = (1980, 1, 1, 0, 0, 0)
 
 
 def config():
-    path = os.path.expanduser("~/.config/citadel/config.json")
+    path = os.environ.get("CITADEL_CONFIG") or os.path.expanduser("~/.config/citadel/config.json")
     try:
         f = json.load(open(path, encoding="utf-8"))
     except FileNotFoundError:
