@@ -17,7 +17,7 @@ Se la versione locale è diversa da quella online, chiedi quale delle due è que
 
 ## 2. Cosa cambiare
 
-Leggi `scheda.md`, poi chiedi "Cosa vorresti cambiare?". Fai al massimo tre domande, una per messaggio, per capire il caso concreto. Ogni modifica rientra in uno di questi tipi, e ogni tipo ha la sua conseguenza:
+Leggi `scheda.md`, poi chiedi "Cosa vorresti cambiare?". Fai al massimo tre domande per capire il caso concreto, guidate come in `citadel-interview`: opzioni pronte con lo strumento delle domande a scelta, se c'è. Ogni modifica rientra in uno di questi tipi, e ogni tipo ha la sua conseguenza:
 
 | Tipo | Per esempio | Conseguenza |
 |---|---|---|

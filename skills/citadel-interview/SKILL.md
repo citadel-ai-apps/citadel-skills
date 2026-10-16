@@ -15,7 +15,12 @@ Un solo messaggio di due righe: farai qualche domanda, poi gli mostrerai cosa ha
 
 ## 2. Intervista
 
-Fai **una domanda per messaggio**. Ogni domanda è discorsiva, breve, e offre 2-4 esempi di risposta quando aiutano a capire. Usa lo strumento delle domande a scelta, se l'ambiente lo offre, solo dove le risposte sono davvero poche e chiare; altrimenti lascia rispondere liberamente.
+L'intervista è **guidata**: l'utente sceglie tra risposte già pronte e scrive solo quando vuole.
+
+- **Con lo strumento delle domande a scelta** (in Claude Code è `AskUserQuestion`): usalo per ogni tema tranne Idea e Contenuto, che chiedono un racconto libero. Fai una domanda per chiamata, o al massimo due molto vicine (per esempio Persone e Ingresso). Ogni domanda ha 2-4 opzioni con un'etichetta breve e una descrizione di una riga che dice cosa comporta, nelle parole dell'utente. Costruisci le opzioni da quello che già sai: se dall'Idea hai capito che l'app è per un piccolo gruppo, le opzioni di Ingresso partono da lì. Metti per prima la scelta più sensata e aggiungi "(consigliata)" all'etichetta. L'utente può sempre scrivere una risposta sua.
+- **Senza lo strumento** (per esempio in claude.ai): una domanda per messaggio, con le opzioni numerate sotto, così l'utente può rispondere con un numero.
+
+Ogni domanda è discorsiva e breve. Tra una domanda e l'altra al massimo una riga di commento ("Chiaro, quindi siete in tre.").
 
 Parla di persone, situazioni ed esempi. Le parole tecniche (lettura/scrittura, permessi, collezione, database, API, URL, endpoint, autenticazione) restano dentro di te: l'utente racconta, tu deduci.
 
@@ -62,7 +67,7 @@ Mostra cosa hai capito, in questo formato:
 **Da decidere**: … (oppure: niente)
 ```
 
-Poi chiedi se va bene o cosa cambiare. Correggi e mostra di nuovo solo le parti cambiate, finché l'utente non conferma.
+Poi chiedi se va bene o cosa cambiare, con lo strumento delle domande a scelta se c'è ("Va bene così" / "Voglio cambiare qualcosa"). Correggi e mostra di nuovo solo le parti cambiate, finché l'utente non conferma.
 
 ## 4. Scheda
 
