@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "name": "NOME",
+  "version": "0.1.0",
+  "pocketbase": { "min": "0.38.0", "max": "0.40.x" },
+  "egress": [],
+  "healthcheck": { "path": "/api/health", "expectStatus": 200 },
+  "smoke": [
+    { "method": "GET", "path": "/", "expectStatus": 200 },
+    { "method": "GET", "path": "/api.js", "expectStatus": 200 }
+  ]
+}
