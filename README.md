@@ -4,13 +4,12 @@ Skill per creare app da pubblicare su Citadel, senza la repo di Citadel.
 
 | Skill | Passo |
 |---|---|
+| `citadel` | punto d'ingresso: cosa si può fare e da dove partire |
 | `citadel-connect` | collega il computer a Citadel: portale, token, app note |
 | `citadel-interview` | dall'idea alla scheda dell'app, con domande semplici |
 | `citadel-new-app` | dalla scheda al pacchetto PocketBase, con test e verifica locale |
 | `citadel-publish` | dal pacchetto all'app online: caricamento, deploy, stato dei collegamenti |
 | `citadel-edit-app` | modifica di un'app esistente: cosa cambiare, scheda, pacchetto, ripubblicazione |
-
-In arrivo: `citadel`, il punto d'ingresso che spiega i passi.
 
 La configurazione comune sta in `~/.config/citadel/config.json` (o nel file indicato da `CITADEL_CONFIG`), gestita da `citadel-connect`.
 
