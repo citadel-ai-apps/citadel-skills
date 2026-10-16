@@ -6,8 +6,9 @@ Skill per creare app da pubblicare su Citadel, senza la repo di Citadel.
 |---|---|
 | `citadel-interview` | dall'idea alla scheda dell'app, con domande semplici |
 | `citadel-new-app` | dalla scheda al pacchetto PocketBase, con test e verifica locale |
+| `citadel-publish` | dal pacchetto all'app online: caricamento, deploy, stato dei collegamenti |
 
-In arrivo: `citadel-connect`, `citadel-publish`, `citadel-edit-app` e `citadel` (il punto d'ingresso).
+In arrivo: `citadel-connect`, `citadel-edit-app` e `citadel` (il punto d'ingresso).
 
 ## Installazione
 
