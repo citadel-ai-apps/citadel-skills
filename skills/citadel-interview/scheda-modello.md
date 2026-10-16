@@ -66,6 +66,10 @@ Per un servizio che vuole una chiave, segna in "Da decidere" dove conservarla. C
 ### Interfaccia
 <schermate principali, dispositivo prevalente, lingua>
 
+### Aspetto
+- Stile: <aziendale | neutro>. Colori: <principale, accento, in esadecimale, o "da raccogliere">. Logo: <file, o "da raccogliere">. Carattere: <nome, o quello di sistema>
+- Tema: <segue il computer con interruttore | solo chiaro | solo scuro>
+
 ## Informazioni da raccogliere
 - [ ] <cosa serve, per esempio "indirizzo e documentazione dell'API del gestionale"> — <chi la fornisce>
 
@@ -73,4 +77,4 @@ Per un servizio che vuole una chiave, segna in "Da decidere" dove conservarla. C
 - <punto aperto> — <proposta, se c'è>
 ```
 
-In "Informazioni da raccogliere" va tutto ciò che serve per costruire e che l'intervista non ha raccolto. Per ogni collegamento servono indirizzo, documentazione, tipo di accesso e un referente. Per le email servono l'indirizzo mittente e il relay. Per l'accesso aziendale serve il provider e chi lo amministra. Le chiavi si annotano solo come "chi la fornisce": il loro valore non entra mai nella scheda.
+In "Informazioni da raccogliere" va tutto ciò che serve per costruire e che l'intervista non ha raccolto. Per ogni collegamento servono indirizzo, documentazione, tipo di accesso e un referente. Per le email servono l'indirizzo mittente e il relay. Per lo stile aziendale servono il logo (SVG o PNG) e i colori: chi li ha, o un sito dell'azienda da cui ricavarli. Per l'accesso aziendale serve il provider e chi lo amministra. Le chiavi si annotano solo come "chi la fornisce": il loro valore non entra mai nella scheda.

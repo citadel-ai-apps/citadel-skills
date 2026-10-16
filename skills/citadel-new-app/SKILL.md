@@ -38,7 +38,7 @@ Parti da [template/](template/): copia `pkg/` e `test/` nella cartella dell'app,
 
 1. **Migrazioni**: una collezione per ogni riga della tabella Dati della scheda, con regole che riproducono esattamente le colonne "chi vede / chi crea / chi modifica". Ogni regola deve risalire alla scheda.
 2. **Hook**: solo per i collegamenti esterni e per la logica che il browser non deve vedere.
-3. **Pagine**: le schermate della sezione Interfaccia, con le parole della scheda.
+3. **Pagine**: le schermate della sezione Interfaccia, con le parole della scheda, e lo stile della sezione Aspetto (vedi [pocketbase.md](pocketbase.md#aspetto)).
 4. **Manifest**: `name`, `version`, `egress` (un host per ogni collegamento), le richieste `smoke`.
 
 Prima di scrivere migrazioni o hook leggi [pocketbase.md](pocketbase.md): la sintassi corretta, gli schemi già collaudati su Citadel e gli errori più comuni. Le regole del formato del pacchetto sono in [package.md](package.md).

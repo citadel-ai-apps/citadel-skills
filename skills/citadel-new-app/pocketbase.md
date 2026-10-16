@@ -124,7 +124,16 @@ Citadel non passa variabili d'ambiente all'app. Le chiavi vanno in una collezion
   - creazione `POST`, modifica `PATCH /records/<id>`, cancellazione `DELETE /records/<id>`
   - accesso `POST /api/collections/users/auth-with-password` con `{identity, password}`, che restituisce `{token, record}`
   - le chiamate successive mandano l'header `Authorization: <token>`
-- Il layout parte dal telefono (larghezza da 360px), ha tema chiaro e scuro, e usa la lingua della scheda. Ogni stato ha il suo messaggio: caricamento, lista vuota, errore di rete, sessione scaduta, troppi tentativi (429).
+- Il layout parte dal telefono (larghezza da 360px) e usa la lingua della scheda. Ogni stato ha il suo messaggio: caricamento, lista vuota, errore di rete, sessione scaduta, troppi tentativi (429).
+
+## Aspetto
+
+Tutti i colori stanno in variabili CSS su `:root`, come nel template: lo stile di un'app si cambia in un punto solo.
+
+- **Stile aziendale**: i colori della scheda vanno in `--accent` (principale) e, se c'è, `--accent-2`. Il logo va in `pb_public/` e compare nell'intestazione. Il carattere aziendale si carica da un file in `pb_public/` (non da servizi esterni) oppure si usa quello di sistema. Se colori o logo sono "da raccogliere", usa lo stile neutro del template e segnalalo nella chiusura.
+- **Tema**: "segue il computer" vuol dire `@media (prefers-color-scheme: dark)`. L'interruttore aggiunge `data-theme="light|dark"` su `<html>`, che ha la precedenza sul sistema, e ricorda la scelta in `localStorage` (dentro un `try`). "Solo chiaro" o "solo scuro" vuol dire un solo insieme di variabili.
+- In entrambi i temi il testo deve restare leggibile sul colore aziendale: se il colore principale è chiaro, il testo sopra è scuro, e viceversa.
+- `brand` in `~/.config/citadel/config.json` ha la forma `{"nome": "...", "accent": "#0F4C81", "accent2": "#C24A0B", "logo": "/percorso/logo.svg", "font": "..."}`: quando c'è, è lo stile aziendale predefinito.
 
 ## Prova in locale
 
