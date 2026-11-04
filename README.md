@@ -11,7 +11,7 @@ Skill per creare app da pubblicare su Citadel, senza la repo di Citadel.
 | `citadel-publish` | dal pacchetto all'app online: caricamento, deploy, stato dei collegamenti |
 | `citadel-edit-app` | modifica di un'app esistente: cosa cambiare, scheda, pacchetto, ripubblicazione |
 
-La configurazione comune sta in `~/.config/citadel/config.json` (o nel file indicato da `CITADEL_CONFIG`), gestita da `citadel-connect`.
+La configurazione è gestita da `citadel-connect`. Ogni progetto può avere il suo ambiente in `.citadel/config.json`, nella radice del repo (escluso da git); se manca vale quella globale, `~/.config/citadel/config.json`. La variabile `CITADEL_CONFIG` le scavalca entrambe.
 
 ## Installazione
 

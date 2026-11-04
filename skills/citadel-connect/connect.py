@@ -1,13 +1,20 @@
 #!/usr/bin/env python3
 """Configurazione locale per parlare con Citadel.
 
-    python3 connect.py init --url <portale> --apps-domain <dominio>
-    python3 connect.py set-token            # da lanciare nel terminale: il token si digita nascosto
-    python3 connect.py add-app <nome breve>
+    python3 connect.py init --url <portale> --apps-domain <dominio> [--global]
+    python3 connect.py set-token [--global]  # da lanciare nel terminale: il token si digita nascosto
+    python3 connect.py add-app <nome breve> [--global]
     python3 connect.py check [--tenant <nome breve>]
     python3 connect.py apps [--dir <cartella di lavoro>]
 
-Il file è ~/.config/citadel/config.json (o CITADEL_CONFIG), con permessi 600. Il token non viene mai stampato.
+Dove sta la configurazione (file con permessi 600, il token non viene mai stampato):
+- CITADEL_CONFIG, se impostata, vale per tutto.
+- Lettura: il .citadel/config.json più vicino, dalla cartella corrente fino alla radice
+  del repo git; se non c'è, ~/.config/citadel/config.json.
+- Scrittura: init crea .citadel/config.json nella radice del repo (o nella cartella
+  corrente, fuori da git) e aggiunge .citadel/ al .gitignore. set-token e add-app
+  scrivono nel file del progetto e si fermano se non c'è. Con --global si usa
+  ~/.config/citadel/config.json.
 """
 import argparse
 import getpass
@@ -17,22 +24,81 @@ import sys
 import urllib.error
 import urllib.request
 
-PATH = os.environ.get("CITADEL_CONFIG") or os.path.expanduser("~/.config/citadel/config.json")
+GLOBAL = os.path.expanduser("~/.config/citadel/config.json")
+LOCAL = os.path.join(".citadel", "config.json")
 
 
-def load():
+def repo_root(start):
+    """La radice del repo git che contiene start, oppure None."""
+    d = os.path.abspath(start)
+    while True:
+        if os.path.exists(os.path.join(d, ".git")):
+            return d
+        up = os.path.dirname(d)
+        if up == d:
+            return None
+        d = up
+
+
+def project_config(start="."):
+    """Il .citadel/config.json più vicino, salendo da start fino alla radice del repo."""
+    d = os.path.abspath(start)
+    stop = repo_root(d) or d
+    while True:
+        p = os.path.join(d, LOCAL)
+        if os.path.isfile(p):
+            return p
+        if d == stop:
+            return None
+        d = os.path.dirname(d)
+
+
+def config_path(write=False, use_global=False, create=False):
+    """Il file da usare e il suo ambito: variabile, globale o progetto."""
+    env = os.environ.get("CITADEL_CONFIG")
+    if env:
+        return env, "variabile CITADEL_CONFIG"
+    if use_global:
+        return GLOBAL, "globale"
+    found = project_config()
+    if found:
+        return found, "progetto"
+    if create:
+        return os.path.join(repo_root(".") or os.path.abspath("."), LOCAL), "progetto"
+    if write:
+        sys.exit("questo progetto non ha ancora una configurazione Citadel: lancia prima "
+                 "`connect.py init` qui, oppure aggiungi --global per usare quella globale")
+    return GLOBAL, "globale"
+
+
+def ignore_in_git(path):
+    """Aggiunge .citadel/ al .gitignore della radice del repo, se il file è dentro un repo."""
+    root = repo_root(os.path.dirname(path))
+    if not root:
+        return
+    gi = os.path.join(root, ".gitignore")
+    text = open(gi, encoding="utf-8").read() if os.path.isfile(gi) else ""
+    if any(l.strip().rstrip("/") in (".citadel", "/.citadel") for l in text.splitlines()):
+        return
+    with open(gi, "a", encoding="utf-8") as f:
+        if text and not text.endswith("\n"):
+            f.write("\n")
+        f.write(".citadel/\n")
+
+
+def load(path):
     try:
-        return json.load(open(PATH, encoding="utf-8"))
+        return json.load(open(path, encoding="utf-8"))
     except FileNotFoundError:
         return {}
 
 
-def save(c):
-    os.makedirs(os.path.dirname(PATH), mode=0o700, exist_ok=True)
-    fd = os.open(PATH, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+def save(path, c):
+    os.makedirs(os.path.dirname(path), mode=0o700, exist_ok=True)
+    fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
     with os.fdopen(fd, "w", encoding="utf-8") as f:
         json.dump(c, f, indent=2)
-    os.chmod(PATH, 0o600)
+    os.chmod(path, 0o600)
 
 
 def get(c, path, token=True):
@@ -91,8 +157,8 @@ def live(c, slug):
     return {"online": "sì", "versione_online": version, "pubblicata": cur.get("deployed_at")}
 
 
-def summary(c):
-    return {"file": PATH, "url": c.get("url"), "apps_domain": c.get("apps_domain"),
+def summary(path, scope, c):
+    return {"file": path, "ambito": scope, "url": c.get("url"), "apps_domain": c.get("apps_domain"),
             "token": "presente" if c.get("token") else "mancante", "app": c.get("apps", [])}
 
 
@@ -102,28 +168,36 @@ def main():
     i = sub.add_parser("init")
     i.add_argument("--url", required=True)
     i.add_argument("--apps-domain", required=True)
-    sub.add_parser("set-token")
+    s = sub.add_parser("set-token")
     a = sub.add_parser("add-app")
     a.add_argument("slug")
+    for p in (i, s, a):
+        p.add_argument("--global", dest="use_global", action="store_true",
+                       help="usa ~/.config/citadel/config.json invece di quello del progetto")
     k = sub.add_parser("check")
     k.add_argument("--tenant")
     l = sub.add_parser("apps")
     l.add_argument("--dir", default=".")
     args = ap.parse_args()
-    c = load()
+    writing = args.cmd in ("init", "set-token", "add-app")
+    path, scope = config_path(write=writing, use_global=getattr(args, "use_global", False),
+                              create=args.cmd == "init")
+    c = load(path)
 
     if args.cmd == "init":
         c.update(url=args.url.rstrip("/"), apps_domain=args.apps_domain)
-        save(c)
+        save(path, c)
+        if scope == "progetto":
+            ignore_in_git(path)
     elif args.cmd == "set-token":
         t = getpass.getpass("Token Citadel (non viene mostrato): ").strip()
         if not t:
             sys.exit("nessun token inserito")
         c["token"] = t
-        save(c)
+        save(path, c)
     elif args.cmd == "add-app":
         c["apps"] = sorted(set(c.get("apps", [])) | {args.slug})
-        save(c)
+        save(path, c)
     elif args.cmd == "apps":
         apps = local_apps(args.dir)
         for slug in c.get("apps", []):
@@ -134,7 +208,7 @@ def main():
         print(json.dumps(apps, ensure_ascii=False, indent=2))
         return 0
     elif args.cmd == "check":
-        out = summary(c)
+        out = summary(path, scope, c)
         if not c.get("url"):
             out["esito"] = "manca l'indirizzo: lancia init"
         else:
@@ -155,7 +229,7 @@ def main():
                     out["errore"] = f"{st}: {body}"
         print(json.dumps(out, ensure_ascii=False, indent=2))
         return 0
-    print(json.dumps(summary(c), ensure_ascii=False, indent=2))
+    print(json.dumps(summary(path, scope, c), ensure_ascii=False, indent=2))
     return 0
 
 

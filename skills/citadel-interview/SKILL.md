@@ -40,7 +40,7 @@ Copri questi temi, nell'ordine che la conversazione rende naturale. Salta quelli
 | Aspetto | stile aziendale (colori, logo, carattere) o neutro; tema chiaro, scuro o entrambi | "Deve avere i colori e il logo della tua azienda?" e poi "Preferisci uno sfondo chiaro, scuro, o che segua le impostazioni del computer?" |
 | Prima versione | la cosa minima che deve funzionare | "Qual è la prima cosa che vuoi riuscire a fare? Il resto può venire dopo." |
 
-Per l'aspetto, se la configurazione di Citadel (`~/.config/citadel/config.json`) ha una sezione `brand`, proponi quello stile come prima opzione: è lo stile aziendale già deciso. Altrimenti le opzioni sono "lo stile della mia azienda" (poi chiedi colori e logo, o un sito da cui prenderli) e "uno stile semplice e neutro". Per il tema, la scelta consigliata è "segue il computer, con un interruttore chiaro/scuro".
+Per l'aspetto, se la configurazione di Citadel (il file che indica `connect.py check`) ha una sezione `brand`, proponi quello stile come prima opzione: è lo stile aziendale già deciso. Altrimenti le opzioni sono "lo stile della mia azienda" (poi chiedi colori e logo, o un sito da cui prenderli) e "uno stile semplice e neutro". Per il tema, la scelta consigliata è "segue il computer, con un interruttore chiaro/scuro".
 
 Per i collegamenti basta sapere **che cosa** collegare e a cosa serve: indirizzi e dettagli tecnici si raccolgono dopo (passo 4).
 

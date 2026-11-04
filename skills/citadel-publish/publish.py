@@ -4,7 +4,9 @@
     python3 publish.py <cartella pkg> --tenant <nome breve> [--dry-run]
 
 Configurazione, nell'ordine: variabili CITADEL_URL, CITADEL_TOKEN, CITADEL_APPS_DOMAIN,
-poi il file CITADEL_CONFIG o ~/.config/citadel/config.json, con le chiavi url, token, apps_domain.
+poi un file con le chiavi url, token, apps_domain: CITADEL_CONFIG se impostata, altrimenti
+il .citadel/config.json più vicino salendo dalla cartella del pacchetto fino alla radice
+del repo git, altrimenti ~/.config/citadel/config.json.
 Il token non viene mai stampato. Esce con 0 solo se il deploy è riuscito.
 """
 import argparse
@@ -22,8 +24,37 @@ SKIP = {".DS_Store", "Thumbs.db"}
 EPOCH = (1980, 1, 1, 0, 0, 0)
 
 
-def config():
-    path = os.environ.get("CITADEL_CONFIG") or os.path.expanduser("~/.config/citadel/config.json")
+def repo_root(start):
+    """La radice del repo git che contiene start, oppure None."""
+    d = os.path.abspath(start)
+    while True:
+        if os.path.exists(os.path.join(d, ".git")):
+            return d
+        up = os.path.dirname(d)
+        if up == d:
+            return None
+        d = up
+
+
+def config_path(start):
+    """Stesse regole di lettura di citadel-connect: variabile, poi progetto, poi globale."""
+    env = os.environ.get("CITADEL_CONFIG")
+    if env:
+        return env
+    d = os.path.abspath(start)
+    stop = repo_root(d) or d
+    while True:
+        p = os.path.join(d, ".citadel", "config.json")
+        if os.path.isfile(p):
+            return p
+        if d == stop:
+            break
+        d = os.path.dirname(d)
+    return os.path.expanduser("~/.config/citadel/config.json")
+
+
+def config(start="."):
+    path = config_path(start)
     try:
         f = json.load(open(path, encoding="utf-8"))
     except FileNotFoundError:
@@ -110,7 +141,7 @@ def main():
         print(json.dumps({"file": names, "byte": len(data), "versione": manifest.get("version")}, indent=2))
         return 0
 
-    c = config()
+    c = config(a.pkg)
     t = a.tenant
     body, ctype = multipart("package", f"{t}-{manifest.get('version', 'x')}.zip", data)
     st, rel = call(c, "POST", f"/api/v1/tenants/{t}/releases", body, ctype)
