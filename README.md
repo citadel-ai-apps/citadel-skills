@@ -15,5 +15,11 @@ La configurazione comune sta in `~/.config/citadel/config.json` (o nel file indi
 
 ## Installazione
 
-- **Claude Code**: collega ogni cartella di `skills/` in `~/.claude/skills/`, oppure in `.claude/skills/` del progetto in cui lavori.
+- **Claude Code, come plugin** (serve l'accesso in lettura a questo repo):
+  ```
+  /plugin marketplace add Manfrini/citadel-skills
+  /plugin install citadel-skills@citadel-skills
+  ```
+  Per ricevere gli aggiornamenti: `/plugin marketplace update citadel-skills`. Poi parti da `/citadel`.
+- **Claude Code, a mano**: collega ogni cartella di `skills/` in `~/.claude/skills/`, oppure in `.claude/skills/` del progetto in cui lavori.
 - **claude.ai**: comprimi la cartella della skill in uno zip e caricala da Impostazioni → Capacità → Skill. Lì funziona solo `citadel-interview`.

@@ -1,0 +1,8 @@
+{
+  "name": "citadel-skills",
+  "description": "Skill per creare, pubblicare e modificare app PocketBase su Citadel: collegamento, intervista, costruzione, pubblicazione.",
+  "author": {
+    "name": "Marco Manfrini"
+  },
+  "keywords": ["citadel", "pocketbase"]
+}
