@@ -1,6 +1,6 @@
 # PocketBase su Citadel
 
-API JS di PocketBase 0.23 e successive (le versioni offerte da Citadel sono 0.38 e 0.40). Documentazione ufficiale: https://pocketbase.io/docs/js-overview/
+API JS di PocketBase 0.23 e successive (le versioni offerte da Citadel per queste app sono 0.38, 0.40 e 0.41). Documentazione ufficiale: https://pocketbase.io/docs/js-overview/
 
 ## Migrazioni
 
