@@ -29,5 +29,5 @@ L'intervista si può fare anche senza collegamento a Citadel. Costruzione e pubb
 ## Da dove partire
 
 Leggi la configurazione con `python3 <cartella di citadel-connect>/connect.py check`:
-- se manca, si parte da `citadel-connect`;
+- se manca, o il portale non risponde, o il token non è valido, si parte da `citadel-connect`, che raccoglie i dati con domande guidate;
 - se c'è, mostra le app note con `connect.py apps` e chiedi se crearne una nuova o modificarne una.
