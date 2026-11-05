@@ -17,8 +17,8 @@ Un solo messaggio di due righe: farai qualche domanda, poi gli mostrerai cosa ha
 
 L'intervista è **guidata**: l'utente sceglie tra risposte già pronte e scrive solo quando vuole.
 
-- **Con lo strumento delle domande a scelta** (in Claude Code è `AskUserQuestion`): usalo per ogni tema tranne Idea e Contenuto, che chiedono un racconto libero. Fai una domanda per chiamata, o al massimo due molto vicine (per esempio Persone e Ingresso). Ogni domanda ha 2-4 opzioni con un'etichetta breve e una descrizione di una riga che dice cosa comporta, nelle parole dell'utente. Costruisci le opzioni da quello che già sai: se dall'Idea hai capito che l'app è per un piccolo gruppo, le opzioni di Ingresso partono da lì. Metti per prima la scelta più sensata e aggiungi "(consigliata)" all'etichetta. L'utente può sempre scrivere una risposta sua.
-- **Senza lo strumento** (per esempio in claude.ai): una domanda per messaggio, con le opzioni numerate sotto, così l'utente può rispondere con un numero.
+- **Con lo strumento delle domande a scelta** (in Claude Code è `AskUserQuestion`; altri agenti possono averne uno equivalente): usalo per ogni tema tranne Idea e Contenuto, che chiedono un racconto libero. Fai una domanda per chiamata, o al massimo due molto vicine (per esempio Persone e Ingresso). Ogni domanda ha 2-4 opzioni con un'etichetta breve e una descrizione di una riga che dice cosa comporta, nelle parole dell'utente. Costruisci le opzioni da quello che già sai: se dall'Idea hai capito che l'app è per un piccolo gruppo, le opzioni di Ingresso partono da lì. Metti per prima la scelta più sensata e aggiungi "(consigliata)" all'etichetta. L'utente può sempre scrivere una risposta sua.
+- **Senza lo strumento** (per esempio in claude.ai, o in un agente che non ce l'ha): una domanda per messaggio, con le opzioni numerate sotto, così l'utente può rispondere con un numero.
 
 Ogni domanda è discorsiva e breve. Tra una domanda e l'altra al massimo una riga di commento ("Chiaro, quindi siete in tre.").
 
@@ -76,8 +76,8 @@ Poi chiedi se va bene o cosa cambiare, con lo strumento delle domande a scelta s
 
 Scrivi la scheda seguendo [scheda-modello.md](scheda-modello.md), che spiega anche come tradurre le risposte in scelte per Citadel.
 
-- Con accesso ai file (Claude Code): salvala in `<nome>/scheda.md` nella cartella di lavoro. Quella cartella diventerà l'app.
-- Senza accesso ai file (claude.ai): consegnala come file da scaricare.
+- Con accesso ai file (Claude Code, Codex o un altro agente che lavora sul computer): salvala in `<nome>/scheda.md` nella cartella di lavoro. Quella cartella diventerà l'app.
+- Senza accesso ai file (per esempio claude.ai): consegnala come file da scaricare.
 
 ## 5. Chiusura
 

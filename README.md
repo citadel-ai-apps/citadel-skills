@@ -21,5 +21,11 @@ La configurazione è gestita da `citadel-connect`. Ogni progetto può avere il s
   /plugin install citadel-skills@citadel-skills
   ```
   Per ricevere gli aggiornamenti: `/plugin marketplace update citadel-skills`. Poi parti da `/citadel`.
+- **Codex, come plugin** (stesso accesso al repo):
+  ```sh
+  codex plugin marketplace add Manfrini/citadel-skills
+  codex plugin add citadel-skills@citadel-skills
+  ```
+  Per ricevere gli aggiornamenti: `codex plugin marketplace upgrade`.
 - **Claude Code, a mano**: collega ogni cartella di `skills/` in `~/.claude/skills/`, oppure in `.claude/skills/` del progetto in cui lavori.
 - **claude.ai**: comprimi la cartella della skill in uno zip e caricala da Impostazioni → Capacità → Skill. Lì funziona solo `citadel-interview`.

@@ -18,7 +18,7 @@ Tono **asciutto**: rispondi con i passi qui sotto, poi chiedi da dove partire.
 | modificare un'app | `citadel-edit-app` | la cartella di lavoro dell'app |
 | ripubblicare un'app | `citadel-publish` | la cartella di lavoro dell'app |
 
-L'intervista si può fare anche senza collegamento a Citadel. Costruzione e pubblicazione richiedono Claude Code.
+L'intervista si può fare anche senza collegamento a Citadel. Costruzione e pubblicazione richiedono un agente che lavora sul computer, come Claude Code o Codex.
 
 ## Chi fa cosa
 

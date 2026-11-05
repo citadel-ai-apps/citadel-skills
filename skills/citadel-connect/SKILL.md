@@ -27,7 +27,7 @@ Dall'operatore di Citadel della propria azienda l'utente riceve:
 Lancia i comandi dalla cartella del progetto. Chiedi all'utente se l'ambiente vale solo per questo progetto (predefinito) o per tutti (`--global` in ognuno dei tre comandi).
 
 1. `python3 connect.py init --url <portale> --apps-domain <dominio>`
-2. Il token lo inserisce l'utente, digitandolo nascosto. Dagli questo comando da lanciare nel suo terminale, dalla stessa cartella (in Claude Code: con `!` davanti):
+2. Il token lo inserisce l'utente, digitandolo nascosto. Dagli questo comando da lanciare nel suo terminale, dalla stessa cartella (in Claude Code si lancia dalla chat con `!` davanti; in Codex e altrove, nel terminale):
    `python3 <cartella di questa skill>/connect.py set-token`
    Il token resta fuori dalla chat: se l'utente lo incolla nella conversazione, digli di revocarlo e di chiederne uno nuovo.
 3. `python3 connect.py add-app <nome breve>` per ogni app.
