@@ -1,6 +1,6 @@
 {
   "name": "citadel-skills",
-  "description": "Skill Claude Code per lavorare con Citadel.",
+  "description": "Claude Code skills for working with Citadel.",
   "owner": {
     "name": "Marco Manfrini"
   },
@@ -8,7 +8,7 @@
     {
       "name": "citadel-skills",
       "source": "./",
-      "description": "Skill per creare, pubblicare e modificare app PocketBase su Citadel."
+      "description": "Skills to create, publish and change PocketBase apps on Citadel."
     }
   ]
 }

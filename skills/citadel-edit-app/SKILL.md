@@ -1,53 +1,61 @@
 ---
 name: citadel-edit-app
-description: Modifica un'app già esistente su Citadel. Mostra le app disponibili, raccoglie con poche domande cosa cambiare, aggiorna scheda e pacchetto, e ripubblica. Usala quando l'utente vuole cambiare, migliorare, correggere o ampliare un'app Citadel che c'è già.
+description: Changes an app that already exists on Citadel. Shows the available apps, finds out with a few questions what to change, updates spec and package, and republishes. Use it when the user wants to change, improve, fix or extend a Citadel app that already exists.
 ---
 
-# Modificare un'app Citadel
+# Changing a Citadel app
 
-Tono **asciutto** con l'utente, come nell'intervista: domande discorsive, niente termini tecnici.
+## Language
 
-## 1. Scegli l'app
+- **Conversation**: in the user's language (the `language` setting if there is one, otherwise the language they write in).
+- **App**: text the app's users read stays in the spec's `Language` (an old `scheda.md` without that field means Italian), unless the user asks to change it.
+- **Code**: file names, collection and field names, identifiers in English. In an older app with Italian names, keep the existing names: renaming a collection or field means a migration and can lose data.
 
-`python3 <cartella di citadel-connect>/connect.py apps --dir <cartella di lavoro>` elenca le app note: cartella locale, versione locale, versione online. Mostrale all'utente in una riga ciascuna e chiedi quale modificare. Se la configurazione manca, usa prima `citadel-connect`.
+**Tone: terse** with the user, as in the interview: conversational questions, no technical terms.
 
-Per modificare un'app serve la sua **cartella di lavoro**, con `scheda.md` e `pkg/`. Citadel non restituisce il codice di un'app pubblicata. Se la cartella non c'è, dillo all'utente e fermati: il codice va recuperato da dove è stato salvato, per esempio un repository git.
+## 1. Pick the app
 
-Se la versione locale è diversa da quella online, chiedi quale delle due è quella buona prima di andare avanti.
+`python3 <citadel-connect folder>/connect.py apps --dir <working folder>` lists the known apps: local folder, local version, online version. Show them to the user one per line and ask which one to change. If the configuration is missing, use `citadel-connect` first.
 
-## 2. Cosa cambiare
+To change an app you need its **working folder**, with `spec.md` (or `scheda.md` in an older app) and `pkg/`. Citadel does not give back the code of a published app. If the folder is not there, tell the user and stop: the code has to be recovered from where it was saved, for example a git repository.
 
-Leggi `scheda.md`, poi chiedi "Cosa vorresti cambiare?". Fai al massimo tre domande per capire il caso concreto, guidate come in `citadel-interview`: opzioni pronte con lo strumento delle domande a scelta, se c'è. Ogni modifica rientra in uno di questi tipi, e ogni tipo ha la sua conseguenza:
+If the local version differs from the online one, ask which of the two is the good one before going on.
 
-| Tipo | Per esempio | Conseguenza |
+## 2. What to change
+
+Read the spec, then ask "What would you like to change?". Ask at most three questions to understand the concrete case, guided as in `citadel-interview`: ready-made options with the multiple-choice tool, if there is one. Every change falls into one of these types, and each type has its consequence:
+
+| Type | For example | Consequence |
 |---|---|---|
-| Aspetto e testi | colori, parole, ordine dei campi | solo `pb_public/` |
-| Nuove informazioni | un campo in più, un nuovo tipo di voce | una **migrazione nuova** |
-| Chi vede o cambia cosa | un responsabile, voci condivise | regole in una migrazione nuova |
-| Collegamenti | un servizio esterno, invio di email | hook più `egress`; il Tier 2 attende un approvatore |
-| Informazioni da togliere | un campo che non serve più | migrazione nuova; **i dati di quel campo si perdono** |
+| Look and text | colours, wording, field order | `pb_public/` only |
+| New information | an extra field, a new kind of entry | a **new migration** |
+| Who sees or changes what | a manager, shared entries | rules in a new migration |
+| Connections | an external service, sending email | hook plus `egress`; Tier 2 waits for an approver |
+| Information to remove | a field no longer needed | new migration; **that field's data is lost** |
 
-## 3. Riepilogo
+## 3. Summary
+
+In the conversation language:
 
 ```
-**Cosa cambia**
+**What changes**
 - …
 
-**Cosa vedrai di diverso**
-<2-4 righe: la passeggiata solo sulle schermate che cambiano>
+**What you'll see differently**
+<2-4 lines: the walk-through only over the screens that change>
 
-**Cosa resta uguale**: …
-**Attenzione**: … (dati che si perdono, collegamenti da approvare; oppure: niente)
+**What stays the same**: …
+**Watch out**: … (data that is lost, connections to approve; or: nothing)
 ```
 
-Chiedi conferma. Se si perdono dati, serve un sì esplicito su quel punto.
+Ask for confirmation. If data is lost, an explicit yes on that point is needed.
 
-## 4. Costruzione
+## 4. Build
 
-1. Aggiorna `scheda.md`: le sezioni toccate, più una riga in `## Modifiche` (crea la sezione se manca) con data e versione.
-2. Applica la modifica seguendo i passi 3 e 4 di `citadel-new-app`, con le stesse verifiche. In più valgono due regole: le migrazioni già pubblicate restano come sono, e i test esistenti devono restare verdi.
-3. Aumenta `version` in `pbapp.json`: il terzo numero per aspetto e correzioni (1.2.0 → 1.2.1), il secondo per tutto il resto (1.2.1 → 1.3.0).
+1. Update the spec: the sections touched, plus a line under `## Changes` (create the section if missing) with date and version. In an older `scheda.md`, keep its Italian headings and add the section as `## Modifiche`.
+2. Apply the change following steps 3 and 4 of `citadel-new-app`, with the same checks. Two extra rules apply: migrations already published stay as they are, and the existing tests must stay green.
+3. Increase `version` in `pbapp.json`: the third number for look and fixes (1.2.0 → 1.2.1), the second for everything else (1.2.1 → 1.3.0).
 
-## 5. Pubblicazione
+## 5. Publication
 
-Pubblica con `citadel-publish` e chiudi come indicato lì. Se il deploy fallisce, Citadel ha già rimesso online la versione precedente, dati compresi.
+Publish with `citadel-publish` and close as described there. If the deploy fails, Citadel has already put the previous version back online, data included.

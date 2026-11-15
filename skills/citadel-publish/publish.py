@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
-"""Pubblica un pacchetto su Citadel: zip, caricamento, deploy, stato dei collegamenti.
+"""Publish a package to Citadel: zip, upload, deploy, state of the external connections.
 
-    python3 publish.py <cartella pkg> --tenant <nome breve> [--dry-run]
+    python3 publish.py <pkg folder> --tenant <short name> [--dry-run]
 
-Configurazione, nell'ordine: variabili CITADEL_URL, CITADEL_TOKEN, CITADEL_APPS_DOMAIN,
-poi un file con le chiavi url, token, apps_domain: CITADEL_CONFIG se impostata, altrimenti
-il .citadel/config.json più vicino salendo dalla cartella del pacchetto fino alla radice
-del repo git, altrimenti ~/.config/citadel/config.json.
-Il token non viene mai stampato. Esce con 0 solo se il deploy è riuscito.
+Configuration, in this order: variables CITADEL_URL, CITADEL_TOKEN, CITADEL_APPS_DOMAIN,
+then a file with the keys url, token, apps_domain: CITADEL_CONFIG if set, otherwise
+the nearest .citadel/config.json going up from the package folder to the root of the
+git repo, otherwise ~/.config/citadel/config.json.
+The token is never printed. Exits with 0 only if the deploy succeeded.
 """
 import argparse
 import io
@@ -25,7 +25,7 @@ EPOCH = (1980, 1, 1, 0, 0, 0)
 
 
 def repo_root(start):
-    """La radice del repo git che contiene start, oppure None."""
+    """The root of the git repo containing start, or None."""
     d = os.path.abspath(start)
     while True:
         if os.path.exists(os.path.join(d, ".git")):
@@ -37,7 +37,7 @@ def repo_root(start):
 
 
 def config_path(start):
-    """Stesse regole di lettura di citadel-connect: variabile, poi progetto, poi globale."""
+    """Same read rules as citadel-connect: variable, then project, then global."""
     env = os.environ.get("CITADEL_CONFIG")
     if env:
         return env
@@ -66,13 +66,13 @@ def config(start="."):
     }
     missing = [k for k in ("url", "token") if not c[k]]
     if missing:
-        sys.exit(f"configurazione mancante: {', '.join(missing)} (variabili CITADEL_* o {path})")
+        sys.exit(f"missing configuration: {', '.join(missing)} (CITADEL_* variables or {path})")
     c["url"] = c["url"].rstrip("/")
     return c
 
 
 def build_zip(root):
-    """Zip riproducibile: ordine fisso, data fissa, permessi 644, niente file di sistema."""
+    """Reproducible zip: fixed order, fixed date, mode 644, no system files."""
     buf = io.BytesIO()
     names = []
     with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:
@@ -112,7 +112,7 @@ def call(c, method, path, body=None, ctype=None):
         except ValueError:
             return e.code, {"error": raw.decode("utf-8", "replace")[:500]}
     except urllib.error.URLError as e:
-        sys.exit(f"Citadel non raggiungibile a {c['url']}: {e.reason}")
+        sys.exit(f"Citadel unreachable at {c['url']}: {e.reason}")
 
 
 def multipart(field, filename, data):
@@ -124,7 +124,7 @@ def multipart(field, filename, data):
 
 def fail(step, status, body):
     msg = body.get("error") if isinstance(body, dict) else body
-    print(json.dumps({"ok": False, "passo": step, "stato_http": status, "errore": msg}, ensure_ascii=False, indent=2))
+    print(json.dumps({"ok": False, "step": step, "http_status": status, "error": msg}, ensure_ascii=False, indent=2))
     sys.exit(1)
 
 
@@ -132,13 +132,13 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("pkg")
     ap.add_argument("--tenant", required=True)
-    ap.add_argument("--dry-run", action="store_true", help="crea solo lo zip e ne elenca il contenuto")
+    ap.add_argument("--dry-run", action="store_true", help="only build the zip and list its contents")
     a = ap.parse_args()
 
     data, names = build_zip(a.pkg)
     manifest = json.load(open(os.path.join(a.pkg, "pbapp.json"), encoding="utf-8"))
     if a.dry_run:
-        print(json.dumps({"file": names, "byte": len(data), "versione": manifest.get("version")}, indent=2))
+        print(json.dumps({"files": names, "bytes": len(data), "version": manifest.get("version")}, indent=2))
         return 0
 
     c = config(a.pkg)
@@ -146,7 +146,7 @@ def main():
     body, ctype = multipart("package", f"{t}-{manifest.get('version', 'x')}.zip", data)
     st, rel = call(c, "POST", f"/api/v1/tenants/{t}/releases", body, ctype)
     if st != 201:
-        fail("caricamento", st, rel)
+        fail("upload", st, rel)
 
     st, dep = call(c, "POST", f"/api/v1/tenants/{t}/releases/{rel['id']}/deploy")
     if st not in (200, 422):
@@ -157,21 +157,21 @@ def main():
 
     out = {
         "ok": bool(dep.get("deployed")),
-        "versione": manifest.get("version"),
+        "version": manifest.get("version"),
         "release": rel["id"],
-        "tornato_indietro": dep.get("rolled_back", False),
-        "passo_fallito": dep.get("failed_step"),
-        "errore": dep.get("error"),
-        "autorizzazioni": [
-            {"host": g.get("subject"), "tier": g.get("tier"), "decisione": g.get("decision"), "motivo": g.get("reason")}
+        "rolled_back": dep.get("rolled_back", False),
+        "failed_step": dep.get("failed_step"),
+        "error": dep.get("error"),
+        "grants": [
+            {"host": g.get("subject"), "tier": g.get("tier"), "decision": g.get("decision"), "reason": g.get("reason")}
             for g in dep.get("grants") or []
         ],
-        "collegamenti": entries,
+        "egress": entries,
     }
     if c["apps_domain"]:
-        # "apps.azienda.it" vuol dire https; un ambiente di sviluppo può dare "http://apps.localhost".
+        # "apps.company.com" means https; a development setup may give "http://apps.localhost".
         scheme, _, domain = c["apps_domain"].rpartition("://")
-        out["indirizzo"] = f"{scheme or 'https'}://{t}.{domain}/"
+        out["address"] = f"{scheme or 'https'}://{t}.{domain}/"
     if not out["ok"] and dep.get("logs"):
         out["log"] = dep["logs"][-3000:]
     print(json.dumps(out, ensure_ascii=False, indent=2))

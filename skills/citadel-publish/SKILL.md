@@ -1,38 +1,40 @@
 ---
 name: citadel-publish
-description: Pubblica su Citadel un'app già costruita. Carica il pacchetto, fa il deploy, restituisce l'indirizzo e lo stato dei collegamenti esterni. Usala quando un'app per Citadel va pubblicata, messa online, aggiornata o rilasciata.
+description: Publishes an app already built for Citadel. Uploads the package, deploys it, returns the address and the state of the external connections. Use it when a Citadel app has to be published, put online, updated or released.
 ---
 
-# Pubblicare un'app su Citadel
+# Publishing an app on Citadel
 
-Tono **asciutto** con l'utente: esito, indirizzo, cosa resta da fare.
+**Language**: talk to the user in the user's language (the `language` setting if there is one, otherwise the language they write in). Commands and JSON keys stay in English.
 
-## 1. Configurazione
+**Tone: terse** with the user: result, address, what is left to do.
 
-Servono tre dati: l'indirizzo del portale Citadel (`url`), un token personale (`token`), il dominio delle app (`apps_domain`, per esempio `apps.azienda.it`; in sviluppo può includere lo schema, `http://apps.localhost`). Lo script li legge dalle variabili `CITADEL_URL`, `CITADEL_TOKEN` e `CITADEL_APPS_DOMAIN`, oppure dal file di configurazione di `citadel-connect`: quello del progetto (`.citadel/config.json`, il più vicino salendo dalla cartella del pacchetto fino alla radice del repo) o, se manca, quello globale (`~/.config/citadel/config.json`).
+## 1. Configuration
 
-Se mancano, chiedi all'utente indirizzo e dominio. Il **token lo salva l'utente**: lo riceve dall'operatore di Citadel, e tu gli dai il comando per scriverlo nel file con permessi 600. Il valore del token resta fuori dalla chat e da ogni output.
+Three values are needed: the Citadel portal address (`url`), a personal token (`token`), the apps domain (`apps_domain`, for example `apps.company.com`; in development it may include the scheme, `http://apps.localhost`). The script reads them from the variables `CITADEL_URL`, `CITADEL_TOKEN` and `CITADEL_APPS_DOMAIN`, or from the `citadel-connect` configuration file: the project one (`.citadel/config.json`, the nearest going up from the package folder to the repo root) or, if missing, the global one (`~/.config/citadel/config.json`).
 
-## 2. Pacchetto e app
+If they are missing, use `citadel-connect`. The **token is saved by the user**: they get it from the Citadel operator and type it hidden with `connect.py set-token`. Its value stays out of the chat and out of every output.
 
-- **App di destinazione**: il "Nome breve" della scheda (`<nome>/scheda.md`). La crea l'operatore di Citadel: se l'API risponde 404 sull'app, dillo all'utente e fermati.
-- **Versione**: aumenta `version` in `pbapp.json` rispetto all'ultima pubblicata.
-- **Controllo**: `python3 <cartella di citadel-new-app>/check_package.py <nome>/pkg` deve rispondere `ok`.
+## 2. Package and app
 
-## 3. Pubblicazione
+- **Target app**: the spec's "Short name" (`<name>/spec.md`; in an older app, "Nome breve" in `<name>/scheda.md`). The operator creates it: if the API answers 404 on the app, tell the user and stop.
+- **Version**: increase `version` in `pbapp.json` over the last one published.
+- **Check**: `python3 <citadel-new-app folder>/check_package.py <name>/pkg` must answer `ok`.
+
+## 3. Publication
 
 ```sh
-python3 <cartella di questa skill>/publish.py <nome>/pkg --tenant <nome breve>
+python3 <this skill's folder>/publish.py <name>/pkg --tenant <short name>
 ```
 
-Lo script crea uno zip riproducibile, lo carica, avvia il deploy e legge lo stato dei collegamenti. Restituisce un JSON ed esce con 0 solo se il deploy è riuscito. Con `--dry-run` mostra il contenuto dello zip senza caricare nulla.
+The script builds a reproducible zip, uploads it, starts the deploy and reads the state of the connections. It returns JSON and exits with 0 only if the deploy succeeded. With `--dry-run` it shows the zip's contents without uploading anything.
 
-Il deploy di Citadel segue questa sequenza: salvataggio dei dati, sostituzione della versione, controllo di salute, richieste `smoke`. Se un passo fallisce, Citadel torna da solo alla versione precedente, codice e dati (`tornato_indietro: true`).
+Citadel's deploy follows this sequence: data snapshot, version swap, health check, `smoke` requests. If a step fails, Citadel goes back to the previous version by itself, code and data (`rolled_back: true`).
 
-## 4. Esito
+## 4. Result
 
-Un messaggio breve all'utente:
+A short message to the user:
 
-- **Riuscito**: l'indirizzo dell'app e come si entra, secondo la sezione Ingresso della scheda. Per esempio: "gli utenti li crei dal pannello `/_/`", oppure "basta aprire il link".
-- **Collegamenti**: per ogni host, autorizzato oppure in attesa. Un host in attesa (Tier 2) va approvato dall'operatore nel portale, alla pagina delle autorizzazioni; fino ad allora le chiamate verso quell'host falliscono e l'app deve mostrare un messaggio chiaro.
-- **Fallito**: in quale passo (`passo_fallito`), il motivo detto in parole semplici, e che è ancora online la versione precedente. Poi correggi con `citadel-new-app` partendo dall'`errore` e dal `log`, e ripubblica.
+- **Succeeded**: the app's `address` and how people get in, according to the spec's Sign-in section. For example: "you create users from the `/_/` panel", or "just open the link".
+- **Connections**: for each host in `grants`, authorised or pending. A pending host (Tier 2) must be approved by the operator in the portal, on the authorisations page; until then calls to that host fail and the app must show a clear message.
+- **Failed**: which step (`failed_step`), the reason in plain words, and that the previous version is still online. Then fix it with `citadel-new-app` starting from `error` and `log`, and publish again.

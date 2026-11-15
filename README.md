@@ -1,31 +1,54 @@
 # Citadel skills
 
-Skill per creare app da pubblicare su Citadel, senza la repo di Citadel.
+Skills to create apps to publish on Citadel, without the Citadel repo.
 
-| Skill | Passo |
+| Skill | Step |
 |---|---|
-| `citadel` | punto d'ingresso: cosa si può fare e da dove partire |
-| `citadel-connect` | collega il computer a Citadel: portale, token, app note |
-| `citadel-interview` | dall'idea alla scheda dell'app, con domande semplici |
-| `citadel-new-app` | dalla scheda al pacchetto PocketBase, con test e verifica locale |
-| `citadel-publish` | dal pacchetto all'app online: caricamento, deploy, stato dei collegamenti |
-| `citadel-edit-app` | modifica di un'app esistente: cosa cambiare, scheda, pacchetto, ripubblicazione |
+| `citadel` | entry point: what you can do and where to start |
+| `citadel-connect` | connects the computer to Citadel: portal, token, known apps |
+| `citadel-interview` | from the idea to the app's spec, with simple questions |
+| `citadel-new-app` | from the spec to the PocketBase package, with tests and a local check |
+| `citadel-publish` | from the package to the app online: upload, deploy, state of the connections |
+| `citadel-edit-app` | changes to an existing app: what to change, spec, package, republication |
 
-La configurazione è gestita da `citadel-connect`. Ogni progetto può avere il suo ambiente in `.citadel/config.json`, nella radice del repo (escluso da git); se manca vale quella globale, `~/.config/citadel/config.json`. La variabile `CITADEL_CONFIG` le scavalca entrambe.
+The configuration is managed by `citadel-connect`. Each project can have its own environment in `.citadel/config.json`, at the repo root (excluded from git); if it is missing, the global one applies, `~/.config/citadel/config.json`. The `CITADEL_CONFIG` variable overrides both.
 
-## Installazione
+## Languages
 
-- **Claude Code, come plugin** (serve l'accesso in lettura a questo repo):
+The skills are written in English and talk to each person in their own language. Three languages are kept apart:
+
+- **The skills**: always English (instructions, file names, keys, code).
+- **The conversation**: the user's. Claude Code reads it from the `language` setting in your own `~/.claude/settings.json`; without it, the skills answer in the language you write in. To work in Italian:
+  ```json
+  { "language": "italian" }
+  ```
+  Put it in your personal settings, never in a project's `.claude/settings.json`: it would force the language on everyone who opens the project.
+- **The app**: the `Language` field of the app's spec, set by the interview to the conversation language. Pages and messages of the app use it, whoever builds or changes it later.
+
+Apps created with earlier, Italian versions of the skills have `scheda.md` instead of `spec.md`. The skills still read them and treat their language as Italian.
+
+## Install
+
+- **Claude Code, as a plugin** (read access to this repo is needed):
   ```
   /plugin marketplace add Manfrini/citadel-skills
   /plugin install citadel-skills@citadel-skills
   ```
-  Per ricevere gli aggiornamenti: `/plugin marketplace update citadel-skills`. Poi parti da `/citadel`.
-- **Codex, come plugin** (stesso accesso al repo):
+  To get updates: `/plugin marketplace update citadel-skills`. Then start from `/citadel`.
+- **Codex, as a plugin** (same access to the repo):
   ```sh
   codex plugin marketplace add Manfrini/citadel-skills
   codex plugin add citadel-skills@citadel-skills
   ```
-  Per ricevere gli aggiornamenti: `codex plugin marketplace upgrade`.
-- **Claude Code, a mano**: collega ogni cartella di `skills/` in `~/.claude/skills/`, oppure in `.claude/skills/` del progetto in cui lavori.
-- **claude.ai**: comprimi la cartella della skill in uno zip e caricala da Impostazioni → Capacità → Skill. Lì funziona solo `citadel-interview`.
+  To get updates: `codex plugin marketplace upgrade`.
+- **Claude Code, by hand**: link each folder in `skills/` into `~/.claude/skills/`, or into `.claude/skills/` of the project you work in.
+- **claude.ai**: zip the skill folder and upload it from Settings → Capabilities → Skills. Only `citadel-interview` works there.
+
+## Tests
+
+```sh
+python3 tests/test_scripts.py
+node --test 'skills/citadel-new-app/template/test/*.test.mjs'
+```
+
+`tests/test_scripts.py` also checks that the skills stay in English and that each one states the language rule.

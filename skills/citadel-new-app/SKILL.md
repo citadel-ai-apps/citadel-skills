@@ -1,62 +1,68 @@
 ---
 name: citadel-new-app
-description: Costruisce un'app nuova per Citadel partendo dalla sua scheda. Produce il pacchetto PocketBase (migrazioni, hook, pagine) con i test, e lo verifica in locale. Usala quando c'è da creare o costruire un'app per Citadel, o quando una scheda in `<nome>/scheda.md` è pronta per essere costruita.
+description: Builds a new app for Citadel from its spec. Produces the PocketBase package (migrations, hooks, pages) with tests, and checks it locally. Use it when an app for Citadel has to be created or built, or when a spec in `<name>/spec.md` is ready to be built.
 ---
 
-# Costruire un'app per Citadel
+# Building an app for Citadel
 
-Citadel ospita app PocketBase. Ogni app è un **pacchetto**: migrazioni per i dati, hook per la logica lato server, pagine statiche, un manifest. La piattaforma ci mette il resto (binario, rete, backup). Il pacchetto si scrive in qualsiasi cartella: non serve la repo di Citadel.
+Citadel hosts PocketBase apps. Each app is a **package**: migrations for the data, hooks for server-side logic, static pages, a manifest. The platform supplies the rest (binary, network, backups). The package can be written in any folder: the Citadel repo is not needed.
 
-Tono **asciutto** con l'utente: frasi brevi, elenchi, dettagli tecnici solo se li chiede.
+## Language
 
-## Cartella dell'app
+- **Conversation**: in the user's language (the `language` setting if there is one, otherwise the language they write in).
+- **App**: everything the app's users read (pages, buttons, messages, empty states, sample data, `<html lang>`) is in the spec's `Language`. An old `scheda.md` without that field means Italian.
+- **Code**: file names, collection and field names, identifiers and comments in English.
+
+**Tone: terse** with the user: short sentences, lists, technical detail only if they ask.
+
+## App folder
 
 ```
-<nome>/
-  scheda.md      cosa fare e perché (da citadel-interview)
-  pkg/           il pacchetto: pbapp.json, pb_migrations/, pb_hooks/, pb_public/
-  test/          *.test.mjs, lanciati con node --test
+<name>/
+  spec.md        what to build and why (from citadel-interview); older apps: scheda.md
+  pkg/           the package: pbapp.json, pb_migrations/, pb_hooks/, pb_public/
+  test/          *.test.mjs, run with node --test
 ```
 
-## 1. Scheda
+## 1. Spec
 
-Leggi `<nome>/scheda.md`. Se la scheda manca, fai prima l'intervista con `citadel-interview`.
+Read `<name>/spec.md` (or `<name>/scheda.md` for an older app). If there is no spec, run the interview with `citadel-interview` first.
 
-Poi passa le due liste in fondo alla scheda:
-- **Informazioni da raccogliere**: chiedi all'utente quelle che servono per costruire adesso, una per messaggio. Un dato che nessuno ha (per esempio la documentazione di un'API) diventa uno stub ben segnalato nel codice e una voce della chiusura.
-- **Da decidere**: ogni punto che cambia il codice va chiuso ora. Proponi una scelta in una riga e chiedi conferma.
+Then go through the two lists at the end of the spec:
+- **Information to collect**: ask the user for the items needed to build now, one per message. An item nobody has (for example an API's documentation) becomes a clearly marked stub in the code and an item in the closing message.
+- **To decide**: every point that changes the code is settled now. Propose a choice in one line and ask for confirmation.
 
-Ogni decisione presa qui va scritta nella scheda, nella sezione che riguarda.
+Every decision taken here is written into the spec, in the section it concerns.
 
-## 2. Piano
+## 2. Plan
 
-Mostra il piano in non più di otto righe: collezioni, schermate, collegamenti, file che creerai. Chiedi "procedo?" e attendi il sì.
+Show the plan in no more than eight lines: collections, screens, connections, files you will create. Ask "shall I go ahead?" and wait for the yes.
 
-## 3. Costruzione
+## 3. Build
 
-Parti da [template/](template/): copia `pkg/` e `test/` nella cartella dell'app, sostituisci `NOME` e crea `pb_migrations/` e `pb_hooks/` quando servono. Poi, in quest'ordine:
+Start from [template/](template/): copy `pkg/` and `test/` into the app folder, replace `NAME`, and create `pb_migrations/` and `pb_hooks/` when needed. If the app's language is not English, set `<html lang>` and pass `messages` to `createClient` in that language (see [api.js](template/pkg/pb_public/api.js)). Then, in this order:
 
-1. **Migrazioni**: una collezione per ogni riga della tabella Dati della scheda, con regole che riproducono esattamente le colonne "chi vede / chi crea / chi modifica". Ogni regola deve risalire alla scheda.
-2. **Hook**: solo per i collegamenti esterni e per la logica che il browser non deve vedere.
-3. **Pagine**: le schermate della sezione Interfaccia, con le parole della scheda, e lo stile della sezione Aspetto (vedi [pocketbase.md](pocketbase.md#aspetto)).
-4. **Manifest**: `name`, `version`, `egress` (un host per ogni collegamento), le richieste `smoke`.
+1. **Migrations**: one collection per row of the spec's Data table, with rules that reproduce exactly the "who sees / who creates / who edits" columns. Every rule must trace back to the spec.
+2. **Hooks**: only for external connections and for logic the browser must not see.
+3. **Pages**: the screens in the Interface section, in the spec's words and language, with the style in the Look section (see [pocketbase.md](pocketbase.md#look)).
+4. **Manifest**: `name`, `version`, `egress` (one host per connection), the `smoke` requests.
 
-Prima di scrivere migrazioni o hook leggi [pocketbase.md](pocketbase.md): la sintassi corretta, gli schemi già collaudati su Citadel e gli errori più comuni. Le regole del formato del pacchetto sono in [package.md](package.md).
+Before writing migrations or hooks, read [pocketbase.md](pocketbase.md): the correct syntax, the patterns already proven on Citadel and the most common mistakes. The package format rules are in [package.md](package.md).
 
-## 4. Verifica
+## 4. Check
 
-Il passo è finito quando tutte e tre le verifiche passano:
+The step is done when all three checks pass:
 
-1. `node --test '<nome>/test/*.test.mjs'` è verde.
-2. `python3 <cartella di questa skill>/check_package.py <nome>/pkg` risponde `ok`.
-3. **Prova in locale**, se `pocketbase` è installato: avvialo sul pacchetto (comando in [pocketbase.md](pocketbase.md#prova-in-locale)). Ogni richiesta `smoke` del manifest deve rispondere con il suo `expectStatus`. Se `pocketbase` non c'è, chiedi all'utente se scaricarlo; se dice no, segna la prova come non fatta.
+1. `node --test '<name>/test/*.test.mjs'` is green.
+2. `python3 <this skill's folder>/check_package.py <name>/pkg` answers `ok`.
+3. **Local run**, if `pocketbase` is installed: start it on the package (command in [pocketbase.md](pocketbase.md#local-run)). Every `smoke` request in the manifest must answer with its `expectStatus`. If `pocketbase` is not there, ask the user whether to download it; if they say no, mark the run as not done.
 
-Correggi e ripeti finché non passano.
+Fix and repeat until they pass.
 
-## 5. Chiusura
+## 5. Closing
 
-Un messaggio breve:
-- cosa hai costruito: collezioni, schermate, collegamenti;
-- come provarla in locale, se l'hai avviata;
-- cosa manca: stub, informazioni non arrivate, prove non fatte;
-- il passo successivo: pubblicarla su Citadel con `citadel-publish`.
+A short message:
+- what you built: collections, screens, connections;
+- how to try it locally, if you started it;
+- what is missing: stubs, information that did not arrive, checks not done;
+- the next step: publish it on Citadel with `citadel-publish`.

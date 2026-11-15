@@ -1,19 +1,19 @@
 #!/usr/bin/env python3
-"""Configurazione locale per parlare con Citadel.
+"""Local configuration for talking to Citadel.
 
-    python3 connect.py init --url <portale> --apps-domain <dominio> [--global]
-    python3 connect.py set-token [--global]  # da lanciare nel terminale: il token si digita nascosto
-    python3 connect.py add-app <nome breve> [--global]
-    python3 connect.py check [--tenant <nome breve>]
-    python3 connect.py apps [--dir <cartella di lavoro>]
+    python3 connect.py init --url <portal> --apps-domain <domain> [--global]
+    python3 connect.py set-token [--global]  # run it in the terminal: the token is typed hidden
+    python3 connect.py add-app <short name> [--global]
+    python3 connect.py check [--tenant <short name>]
+    python3 connect.py apps [--dir <working folder>]
 
-Dove sta la configurazione (file con permessi 600, il token non viene mai stampato):
-- CITADEL_CONFIG, se impostata, vale per tutto.
-- Lettura: il .citadel/config.json più vicino, dalla cartella corrente fino alla radice
-  del repo git; se non c'è, ~/.config/citadel/config.json.
-- Scrittura: init crea .citadel/config.json nella radice del repo (o nella cartella
-  corrente, fuori da git) e aggiunge .citadel/ al .gitignore. set-token e add-app
-  scrivono nel file del progetto e si fermano se non c'è. Con --global si usa
+Where the configuration lives (file with mode 600, the token is never printed):
+- CITADEL_CONFIG, when set, wins over everything.
+- Read: the nearest .citadel/config.json, from the current folder up to the root of
+  the git repo; if there is none, ~/.config/citadel/config.json.
+- Write: init creates .citadel/config.json at the repo root (or in the current
+  folder, outside git) and adds .citadel/ to .gitignore. set-token and add-app
+  write to the project file and stop if it is missing. With --global they use
   ~/.config/citadel/config.json.
 """
 import argparse
@@ -26,10 +26,12 @@ import urllib.request
 
 GLOBAL = os.path.expanduser("~/.config/citadel/config.json")
 LOCAL = os.path.join(".citadel", "config.json")
+SPEC_FILES = ("spec.md", "scheda.md")  # scheda.md: apps made by the earlier, Italian skills
+SHORT_NAME = ("- short name:", "- nome breve:")
 
 
 def repo_root(start):
-    """La radice del repo git che contiene start, oppure None."""
+    """The root of the git repo containing start, or None."""
     d = os.path.abspath(start)
     while True:
         if os.path.exists(os.path.join(d, ".git")):
@@ -41,7 +43,7 @@ def repo_root(start):
 
 
 def project_config(start="."):
-    """Il .citadel/config.json più vicino, salendo da start fino alla radice del repo."""
+    """The nearest .citadel/config.json, going up from start to the repo root."""
     d = os.path.abspath(start)
     stop = repo_root(d) or d
     while True:
@@ -54,25 +56,25 @@ def project_config(start="."):
 
 
 def config_path(write=False, use_global=False, create=False):
-    """Il file da usare e il suo ambito: variabile, globale o progetto."""
+    """The file to use and its scope: variable, global or project."""
     env = os.environ.get("CITADEL_CONFIG")
     if env:
-        return env, "variabile CITADEL_CONFIG"
+        return env, "CITADEL_CONFIG variable"
     if use_global:
-        return GLOBAL, "globale"
+        return GLOBAL, "global"
     found = project_config()
     if found:
-        return found, "progetto"
+        return found, "project"
     if create:
-        return os.path.join(repo_root(".") or os.path.abspath("."), LOCAL), "progetto"
+        return os.path.join(repo_root(".") or os.path.abspath("."), LOCAL), "project"
     if write:
-        sys.exit("questo progetto non ha ancora una configurazione Citadel: lancia prima "
-                 "`connect.py init` qui, oppure aggiungi --global per usare quella globale")
-    return GLOBAL, "globale"
+        sys.exit("this project has no Citadel configuration yet: run "
+                 "`connect.py init` here first, or add --global to use the global one")
+    return GLOBAL, "global"
 
 
 def ignore_in_git(path):
-    """Aggiunge .citadel/ al .gitignore della radice del repo, se il file è dentro un repo."""
+    """Adds .citadel/ to the .gitignore at the repo root, if the file is inside a repo."""
     root = repo_root(os.path.dirname(path))
     if not root:
         return
@@ -111,7 +113,7 @@ def get(c, path, token=True):
             try:
                 return r.status, json.loads(raw or b"null")
             except ValueError:
-                return r.status, None  # la pagina di login è HTML
+                return r.status, None  # the login page is HTML
     except urllib.error.HTTPError as e:
         try:
             return e.code, json.loads(e.read())
@@ -122,44 +124,51 @@ def get(c, path, token=True):
 
 
 def local_apps(root):
-    """Cartelle di app sotto root: contengono pkg/pbapp.json. Il nome breve viene dalla scheda."""
+    """App folders under root: they contain pkg/pbapp.json. The short name comes from the spec.
+
+    spec.md is the current name; scheda.md (with "- Nome breve:") is read for apps
+    created by earlier, Italian versions of the skills.
+    """
     out = {}
     for d in sorted(os.listdir(root)):
         m = os.path.join(root, d, "pkg", "pbapp.json")
         if not os.path.isfile(m):
             continue
         slug = d
-        scheda = os.path.join(root, d, "scheda.md")
-        if os.path.isfile(scheda):
-            for line in open(scheda, encoding="utf-8"):
-                if line.strip().lower().startswith("- nome breve:"):
+        for name in SPEC_FILES:
+            spec = os.path.join(root, d, name)
+            if not os.path.isfile(spec):
+                continue
+            for line in open(spec, encoding="utf-8"):
+                if line.strip().lower().startswith(SHORT_NAME):
                     slug = line.split(":", 1)[1].strip() or d
                     break
+            break
         try:
             version = json.load(open(m, encoding="utf-8")).get("version")
         except ValueError:
             version = None
-        out[slug] = {"cartella": os.path.join(root, d), "versione_locale": version}
+        out[slug] = {"folder": os.path.join(root, d), "local_version": version}
     return out
 
 
 def live(c, slug):
     st, body = get(c, f"/api/v1/tenants/{slug}/releases")
     if st != 200:
-        return {"online": "non esiste" if st == 404 else f"errore {st}"}
+        return {"online": "does not exist" if st == 404 else f"error {st}"}
     cur = next((r for r in body.get("releases") or [] if r.get("id") == body.get("current")), None)
     if not cur:
-        return {"online": "nessuna versione pubblicata"}
+        return {"online": "no version published"}
     try:
         version = json.loads(cur.get("manifest") or "{}").get("version")
     except ValueError:
         version = None
-    return {"online": "sì", "versione_online": version, "pubblicata": cur.get("deployed_at")}
+    return {"online": "yes", "online_version": version, "published": cur.get("deployed_at")}
 
 
 def summary(path, scope, c):
-    return {"file": path, "ambito": scope, "url": c.get("url"), "apps_domain": c.get("apps_domain"),
-            "token": "presente" if c.get("token") else "mancante", "app": c.get("apps", [])}
+    return {"file": path, "scope": scope, "url": c.get("url"), "apps_domain": c.get("apps_domain"),
+            "token": "present" if c.get("token") else "missing", "apps": c.get("apps", [])}
 
 
 def main():
@@ -173,7 +182,7 @@ def main():
     a.add_argument("slug")
     for p in (i, s, a):
         p.add_argument("--global", dest="use_global", action="store_true",
-                       help="usa ~/.config/citadel/config.json invece di quello del progetto")
+                       help="use ~/.config/citadel/config.json instead of the project one")
     k = sub.add_parser("check")
     k.add_argument("--tenant")
     l = sub.add_parser("apps")
@@ -187,12 +196,12 @@ def main():
     if args.cmd == "init":
         c.update(url=args.url.rstrip("/"), apps_domain=args.apps_domain)
         save(path, c)
-        if scope == "progetto":
+        if scope == "project":
             ignore_in_git(path)
     elif args.cmd == "set-token":
-        t = getpass.getpass("Token Citadel (non viene mostrato): ").strip()
+        t = getpass.getpass("Citadel token (not shown): ").strip()
         if not t:
-            sys.exit("nessun token inserito")
+            sys.exit("no token entered")
         c["token"] = t
         save(path, c)
     elif args.cmd == "add-app":
@@ -201,7 +210,7 @@ def main():
     elif args.cmd == "apps":
         apps = local_apps(args.dir)
         for slug in c.get("apps", []):
-            apps.setdefault(slug, {"cartella": None, "versione_locale": None})
+            apps.setdefault(slug, {"folder": None, "local_version": None})
         if c.get("url") and c.get("token"):
             for slug, a in apps.items():
                 a.update(live(c, slug))
@@ -210,23 +219,23 @@ def main():
     elif args.cmd == "check":
         out = summary(path, scope, c)
         if not c.get("url"):
-            out["esito"] = "manca l'indirizzo: lancia init"
+            out["result"] = "portal address missing: run init"
         else:
             st, _ = get(c, "/login", token=False)
-            out["portale"] = "raggiungibile" if st == 200 else f"non raggiungibile ({st or _})"
+            out["portal"] = "reachable" if st == 200 else f"unreachable ({st or _})"
             app = args.tenant or (c.get("apps") or [None])[0]
             if st == 200 and c.get("token") and app:
-                # Un token sbagliato fa rispondere 401 a qualsiasi chiamata.
+                # A wrong token makes any call answer 401.
                 st, body = get(c, f"/api/v1/tenants/{app}/releases")
                 if st == 200:
-                    out["token_valido"] = True
-                    out["app_" + app] = {"release_corrente": body.get("current"), "release": len(body.get("releases") or [])}
+                    out["token_valid"] = True
+                    out["app_" + app] = {"current_release": body.get("current"), "releases": len(body.get("releases") or [])}
                 elif st == 401:
-                    out["token_valido"] = False
+                    out["token_valid"] = False
                 elif st == 404:
-                    out["app_" + app] = "non esiste: chiedi all'operatore di crearla"
+                    out["app_" + app] = "does not exist: ask the operator to create it"
                 else:
-                    out["errore"] = f"{st}: {body}"
+                    out["error"] = f"{st}: {body}"
         print(json.dumps(out, ensure_ascii=False, indent=2))
         return 0
     print(json.dumps(summary(path, scope, c), ensure_ascii=False, indent=2))

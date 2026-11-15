@@ -1,60 +1,67 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { creaClient } from '../pkg/pb_public/api.js';
+import { createClient } from '../pkg/pb_public/api.js';
 
-function memoria() {
+function memory() {
   const m = new Map();
   return { getItem: (k) => (m.has(k) ? m.get(k) : null), setItem: (k, v) => m.set(k, String(v)), removeItem: (k) => m.delete(k) };
 }
 
-// fetch finto: risponde con la coda `risposte` e registra le richieste.
-function finto(risposte) {
-  const richieste = [];
+// Fake fetch: answers from the `responses` queue and records the requests.
+function fake(responses) {
+  const requests = [];
   const f = async (url, opt = {}) => {
-    richieste.push({ url, method: opt.method || 'GET', headers: opt.headers || {}, body: opt.body ? JSON.parse(opt.body) : undefined });
-    const [status, body] = risposte.shift();
+    requests.push({ url, method: opt.method || 'GET', headers: opt.headers || {}, body: opt.body ? JSON.parse(opt.body) : undefined });
+    const [status, body] = responses.shift();
     return { ok: status >= 200 && status < 300, status, json: async () => body ?? {} };
   };
-  f.richieste = richieste;
+  f.requests = requests;
   return f;
 }
 
-test('login salva la sessione e la usa nelle chiamate successive', async () => {
-  const fetch = finto([[200, { token: 'T', record: { id: 'u1' } }], [200, { items: [] }]]);
-  const storage = memoria();
-  const c = creaClient({ fetch, storage });
+test('login stores the session and uses it on later calls', async () => {
+  const fetch = fake([[200, { token: 'T', record: { id: 'u1' } }], [200, { items: [] }]]);
+  const storage = memory();
+  const c = createClient({ fetch, storage });
   await c.login('a@b.it', 'x');
-  assert.deepEqual(c.utente(), { id: 'u1' });
-  assert.deepEqual(creaClient({ fetch, storage }).utente(), { id: 'u1' }, 'persiste nello storage');
-  await c.elenco('voci');
-  assert.equal(fetch.richieste[1].url, '/api/collections/voci/records?sort=-created&perPage=50');
-  assert.equal(fetch.richieste[1].headers.Authorization, 'T');
+  assert.deepEqual(c.user(), { id: 'u1' });
+  assert.deepEqual(createClient({ fetch, storage }).user(), { id: 'u1' }, 'persists in storage');
+  await c.list('items');
+  assert.equal(fetch.requests[1].url, '/api/collections/items/records?sort=-created&perPage=50');
+  assert.equal(fetch.requests[1].headers.Authorization, 'T');
 });
 
-test('login errato dà un messaggio unico', async () => {
-  const c = creaClient({ fetch: finto([[400, {}]]), storage: memoria() });
+test('wrong login gives a single message', async () => {
+  const c = createClient({ fetch: fake([[400, {}]]), storage: memory() });
+  await assert.rejects(c.login('a@b.it', 'x'), { message: 'Wrong email or password' });
+  assert.equal(c.user(), null);
+});
+
+test('messages can be replaced in the app language', async () => {
+  const c = createClient({ fetch: fake([[400, {}]]), storage: memory(), messages: { badLogin: 'Email o password non corretti' } });
   await assert.rejects(c.login('a@b.it', 'x'), { message: 'Email o password non corretti' });
-  assert.equal(c.utente(), null);
+  const d = createClient({ fetch: fake([[429, {}]]), storage: memory(), messages: { badLogin: 'x' } });
+  await assert.rejects(d.list('items'), { message: 'Too many attempts, try again shortly' }, 'missing keys keep the default');
 });
 
-test('401 con sessione la chiude', async () => {
-  const fetch = finto([[200, { token: 'T', record: { id: 'u1' } }], [401, {}]]);
-  const c = creaClient({ fetch, storage: memoria() });
+test('401 with a session closes it', async () => {
+  const fetch = fake([[200, { token: 'T', record: { id: 'u1' } }], [401, {}]]);
+  const c = createClient({ fetch, storage: memory() });
   await c.login('a@b.it', 'x');
-  await assert.rejects(c.elenco('voci'), { status: 401 });
-  assert.equal(c.utente(), null);
+  await assert.rejects(c.list('items'), { status: 401 });
+  assert.equal(c.user(), null);
 });
 
-test('rete assente e 429 hanno messaggi leggibili', async () => {
-  const giu = creaClient({ fetch: async () => { throw new TypeError('failed'); }, storage: memoria() });
-  await assert.rejects(giu.elenco('voci'), { status: 0 });
-  const tanti = creaClient({ fetch: finto([[429, {}]]), storage: memoria() });
-  await assert.rejects(tanti.elenco('voci'), { status: 429 });
+test('network down and 429 have readable messages', async () => {
+  const down = createClient({ fetch: async () => { throw new TypeError('failed'); }, storage: memory() });
+  await assert.rejects(down.list('items'), { status: 0 });
+  const many = createClient({ fetch: fake([[429, {}]]), storage: memory() });
+  await assert.rejects(many.list('items'), { status: 429 });
 });
 
-test('storage che lancia non blocca il client', async () => {
-  const rotto = { getItem() { throw new Error('no'); }, setItem() { throw new Error('no'); }, removeItem() { throw new Error('no'); } };
-  const c = creaClient({ fetch: finto([[200, { token: 'T', record: { id: 'u1' } }]]), storage: rotto });
+test('a throwing storage does not block the client', async () => {
+  const broken = { getItem() { throw new Error('no'); }, setItem() { throw new Error('no'); }, removeItem() { throw new Error('no'); } };
+  const c = createClient({ fetch: fake([[200, { token: 'T', record: { id: 'u1' } }]]), storage: broken });
   await c.login('a@b.it', 'x');
-  assert.deepEqual(c.utente(), { id: 'u1' });
+  assert.deepEqual(c.user(), { id: 'u1' });
 });

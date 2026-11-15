@@ -1,72 +1,74 @@
 ---
 name: citadel-connect
-description: Collega questo computer a un'installazione Citadel: indirizzo del portale, token personale, app a cui si ha accesso. Usala quando si deve configurare Citadel, quando un'altra skill Citadel trova la configurazione mancante o il token non valido, o quando l'utente chiede come accedere a Citadel o quali app ha.
+description: Connects this computer to a Citadel installation - portal address, personal token, the apps you can access. Use it when Citadel has to be set up, when another Citadel skill finds the configuration missing or the token invalid, or when the user asks how to access Citadel or which apps they have.
 ---
 
-# Collegarsi a Citadel
+# Connecting to Citadel
 
-Tono **asciutto**: cosa serve, il comando da lanciare, l'esito.
+**Language**: talk to the user in the user's language (the `language` setting if there is one, otherwise the language they write in). Commands, keys and file names stay in English.
 
-Tutte le skill Citadel leggono la stessa configurazione, gestita da `connect.py` (nella cartella di questa skill). Ogni progetto può avere il suo ambiente:
-- **lettura**: vale il `.citadel/config.json` più vicino, dalla cartella corrente fino alla radice del repo git; se non c'è, `~/.config/citadel/config.json` (globale);
-- **scrittura**: `init` crea `.citadel/config.json` nella radice del repo (fuori da git, nella cartella corrente) e aggiunge `.citadel/` al `.gitignore`; `set-token` e `add-app` scrivono nel file del progetto e si fermano se manca. Con `--global` tutti e tre usano il file globale;
-- la variabile `CITADEL_CONFIG`, se impostata, vale per tutto.
+**Tone: terse.** What is needed, the command to run, the result.
 
-`check` riporta sempre quale file sta usando (`file`, `ambito`).
+All Citadel skills read the same configuration, managed by `connect.py` (in this skill's folder). Each project can have its own environment:
+- **read**: the nearest `.citadel/config.json` wins, from the current folder up to the root of the git repo; if there is none, `~/.config/citadel/config.json` (global);
+- **write**: `init` creates `.citadel/config.json` at the repo root (outside git, in the current folder) and adds `.citadel/` to `.gitignore`; `set-token` and `add-app` write to the project file and stop if it is missing. With `--global` all three use the global file;
+- the `CITADEL_CONFIG` variable, when set, wins over everything.
 
-## 1. Cosa serve
+`check` always reports which file it is using (`file`, `scope`).
 
-Dall'operatore di Citadel della propria azienda l'utente riceve:
-- l'**indirizzo del portale**, per esempio `https://citadel.azienda.it`;
-- il **dominio delle app**, per esempio `apps.azienda.it` (in sviluppo può includere lo schema: `http://apps.localhost`);
-- un **token personale**;
-- il **nome breve** di ogni app su cui può lavorare. Le app nuove le crea l'operatore.
+## 1. What is needed
 
-## 2. Configurazione
+From their company's Citadel operator the user receives:
+- the **portal address**, for example `https://citadel.company.com`;
+- the **apps domain**, for example `apps.company.com` (in development it may include the scheme: `http://apps.localhost`);
+- a **personal token**;
+- the **short name** of each app they can work on. New apps are created by the operator.
 
-Parti da `python3 connect.py check` lanciato nella cartella del progetto. Se la configurazione manca, il portale non risponde o un dato è sbagliato, raccogli i dati con domande guidate, non con una richiesta in prosa.
+## 2. Configuration
 
-### Domande
+Start from `python3 connect.py check`, run in the project folder. If the configuration is missing, the portal does not answer or a value is wrong, collect the details with guided questions, not with a request in prose.
 
-- **Con lo strumento delle domande a scelta** (in Claude Code è `AskUserQuestion`; altri agenti possono averne uno equivalente): al massimo due domande per chiamata, 2-4 opzioni ciascuna con un'etichetta breve e una riga che dice cosa comporta. Metti per prima la scelta più sensata con "(consigliata)". L'utente può sempre scrivere una risposta sua: ricordaglielo quando nessuna opzione può essere quella giusta (un indirizzo che non conosci).
-- **Senza lo strumento**: una domanda per messaggio, opzioni numerate sotto, e "oppure scrivilo".
+### Questions
 
-Costruisci le opzioni da quello che sai già: il risultato di `check` (anche una configurazione globale vecchia), le app trovate da `connect.py apps`, quello che l'utente ha detto. Se un valore noto non funziona, mostralo comunque con la nota del problema ("risponde 401", "non raggiungibile"), così l'utente lo riconosce.
+- **With the multiple-choice question tool** (in Claude Code it is `AskUserQuestion`; other agents may have an equivalent): at most two questions per call, 2-4 options each with a short label and one line saying what it implies. Put the most sensible choice first, marked "(recommended)". The user can always type their own answer: remind them when no option can be the right one (an address you do not know).
+- **Without the tool**: one question per message, numbered options below, and "or type it".
 
-Chiedi solo ciò che manca o non va, in quest'ordine:
+Build the options from what you already know: the `check` result (even an old global configuration), the apps found by `connect.py apps`, what the user has said. If a known value does not work, show it anyway with a note on the problem ("answers 401", "unreachable"), so the user recognises it.
 
-1. **Dove vale** (e **portale**, nella stessa chiamata):
-   - "Solo questo progetto (consigliata)": il file `.citadel/config.json` del progetto;
-   - "Tutti i progetti": quello globale, con `--global` in ognuno dei comandi sotto.
-   Per il portale: l'indirizzo noto, se c'è, più "Lo scrivo io" con un esempio (`https://citadel.azienda.it`).
-2. **Dominio delle app** (e **app**, nella stessa chiamata):
-   - per il dominio proponi quello che si ricava dal portale: lo stesso host (`citadel.azienda.it`, le app sono `<nome>.citadel.azienda.it`) oppure `apps.` davanti; più quello già noto, se diverso;
-   - per le app, a scelta multipla: i nomi brevi noti, più "Un altro: lo scrivo". Il nome breve lo dà l'operatore, al massimo 10 caratteri.
-3. **Token**: mai come domanda. È un segreto e non deve passare nella chat: vedi il passo 2 sotto.
+Ask only what is missing or wrong, in this order:
 
-Prima di scrivere riassumi in una riga (dove vale, portale, dominio, app) e procedi.
+1. **Where it applies** (and **portal**, in the same call):
+   - "This project only (recommended)": the project's `.citadel/config.json`;
+   - "All projects": the global one, with `--global` on each command below.
+   For the portal: the known address, if any, plus "I'll type it" with an example (`https://citadel.company.com`).
+2. **Apps domain** (and **apps**, in the same call):
+   - for the domain, suggest what follows from the portal: the same host (`citadel.company.com`, apps are `<name>.citadel.company.com`) or `apps.` in front; plus the known one, if different;
+   - for the apps, multiple choice: the known short names, plus "Another one: I'll type it". The short name comes from the operator, at most 10 characters.
+3. **Token**: never as a question. It is a secret and must not go through the chat: see step 2 below.
 
-### Comandi
+Before writing, sum up in one line (where it applies, portal, domain, apps) and go ahead.
 
-1. `python3 connect.py init --url <portale> --apps-domain <dominio>`
-2. Il token lo inserisce l'utente, digitandolo nascosto. Dagli questo comando da lanciare nel suo terminale, dalla stessa cartella (in Claude Code si lancia dalla chat con `!` davanti; in Codex e altrove, nel terminale):
-   `python3 <cartella di questa skill>/connect.py set-token`
-   Il token resta fuori dalla chat: se l'utente lo incolla nella conversazione, digli di revocarlo e di chiederne uno nuovo.
-3. `python3 connect.py add-app <nome breve>` per ogni app.
+### Commands
 
-## 3. Verifica
+1. `python3 connect.py init --url <portal> --apps-domain <domain>`
+2. The user enters the token, typing it hidden. Give them this command to run in their terminal, from the same folder (in Claude Code it can be run from the chat with `!` in front; in Codex and elsewhere, in the terminal):
+   `python3 <this skill's folder>/connect.py set-token`
+   The token stays out of the chat: if the user pastes it into the conversation, tell them to revoke it and ask for a new one.
+3. `python3 connect.py add-app <short name>` for each app.
 
-`python3 connect.py check --tenant <nome breve>`
+## 3. Check
 
-Il passo è finito quando il portale risulta raggiungibile, `token_valido` è `true` e ogni app esiste. Altrimenti torna alle domande solo per il dato che non va:
-- portale non raggiungibile: l'indirizzo è sbagliato, oppure serve la rete aziendale o la VPN;
-- token non valido: va chiesto un token nuovo all'operatore;
-- app inesistente: va chiesto all'operatore di crearla.
+`python3 connect.py check --tenant <short name>`
 
-## 4. Le mie app
+The step is done when the portal is `reachable`, `token_valid` is `true` and every app exists. Otherwise go back to the questions only for the value that is wrong:
+- portal unreachable: the address is wrong, or the company network or VPN is needed;
+- token not valid: a new token has to be requested from the operator;
+- app does not exist: ask the operator to create it.
 
-Citadel oggi non ha una chiamata che elenca le app di un utente. Le app note sono quindi due insiemi:
-- quelle registrate con `add-app`;
-- le cartelle di lavoro che contengono `scheda.md` e `pkg/`.
+## 4. My apps
 
-Mostrali insieme: nome breve, cartella locale (se c'è), release online.
+Citadel does not yet have a call that lists a user's apps. The known apps are therefore two sets:
+- those registered with `add-app`;
+- the working folders that contain `spec.md` (or `scheda.md`, for apps made with earlier versions of the skills) and `pkg/`.
+
+`connect.py apps` shows them together: short name, local folder (if any), online release.
