@@ -16,6 +16,10 @@ All Citadel skills read the same configuration, managed by `connect.py` (in this
 
 `check` always reports which file it is using (`file`, `scope`).
 
+## First time on this computer
+
+When `check` finds no configuration at all, follow the tutorial in [first-time.md](first-time.md): asking the operator for the token, opening a terminal on Mac or Windows, entering the token. The sections below are the reference it relies on.
+
 ## 1. What is needed
 
 From their company's Citadel operator the user receives:
@@ -51,9 +55,7 @@ Before writing, sum up in one line (where it applies, portal, domain, apps) and 
 ### Commands
 
 1. `python3 connect.py init --url <portal> --apps-domain <domain>`
-2. The user enters the token, typing it hidden. Give them this command to run in their terminal, from the same folder (in Claude Code it can be run from the chat with `!` in front; in Codex and elsewhere, in the terminal):
-   `python3 <this skill's folder>/connect.py set-token`
-   The token stays out of the chat: if the user pastes it into the conversation, tell them to revoke it and ask for a new one.
+2. The user enters the token in a terminal window, where it is typed hidden: steps 3 and 4 of [first-time.md](first-time.md). `set-token` refuses to run from the chat's shell, which would show the token. If the user pastes it into the conversation, tell them to have it revoked and ask for a new one.
 3. `python3 connect.py add-app <short name>` for each app.
 
 ## 3. Check

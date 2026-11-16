@@ -1,6 +1,6 @@
 ---
 name: citadel-interview
-description: Guided interview for a new app to publish on Citadel. Asks simple questions to non-technical people, gives back a plain-words summary of what they will see, and writes the spec the app is built from. Use it when someone wants to create an app on Citadel, or when an app has to be built and has no spec yet (`<name>/spec.md`).
+description: Guided interview for a new app to publish on Citadel. Asks simple questions to non-technical people, gives back a plain-words summary of what they will see, and writes the spec the app is built from. Use it when someone wants to describe the app they need, when the Citadel wizard reaches the interview, or when an app has to be built and has no spec yet (`<name>/spec.md`). Works without a connection to Citadel.
 ---
 
 # Interview for a Citadel app

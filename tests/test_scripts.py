@@ -30,6 +30,14 @@ class Connect(unittest.TestCase):
         self.assertEqual(out["token"], "missing")
         self.assertIn("result", out)
 
+    def test_set_token_outside_a_terminal_points_to_one(self):
+        # From a chat tool the input is not a terminal: the token would be echoed, so refuse.
+        r = subprocess.run([sys.executable, CONNECT, "set-token", "--global"], input="secret\n",
+                           capture_output=True, text=True, env=dict(os.environ, CITADEL_CONFIG=self.cfg))
+        self.assertEqual(r.returncode, 2)
+        self.assertIn("PowerShell", r.stderr)
+        self.assertFalse(os.path.exists(self.cfg) and "secret" in open(self.cfg).read())
+
 class Publish(unittest.TestCase):
     def test_dry_run_in_english(self):
         r = run(PUBLISH, os.path.join(REPO, "citadel-new-app/template/pkg"), "--tenant", "x", "--dry-run")

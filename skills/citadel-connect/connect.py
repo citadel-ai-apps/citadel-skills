@@ -199,11 +199,17 @@ def main():
         if scope == "project":
             ignore_in_git(path)
     elif args.cmd == "set-token":
-        t = getpass.getpass("Citadel token (not shown): ").strip()
+        if not sys.stdin.isatty():
+            # A chat tool's shell has no terminal: getpass would echo the token.
+            print("Run this command in a terminal window (Terminal on Mac, PowerShell on Windows): "
+                  "there the token is typed hidden.", file=sys.stderr)
+            sys.exit(2)
+        t = getpass.getpass("Paste the Citadel token and press Enter (nothing appears while you paste): ").strip()
         if not t:
             sys.exit("no token entered")
         c["token"] = t
         save(path, c)
+        print("Token saved. Go back to the chat and write: done")
     elif args.cmd == "add-app":
         c["apps"] = sorted(set(c.get("apps", [])) | {args.slug})
         save(path, c)

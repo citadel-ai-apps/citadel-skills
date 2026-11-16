@@ -11,6 +11,14 @@ Skills to create apps to publish on Citadel, without the Citadel repo.
 | `citadel-publish` | from the package to the app online: upload, deploy, state of the connections |
 | `citadel-edit-app` | changes to an existing app: what to change, spec, package, republication |
 
+## Quick start
+
+1. **Install the plugin** in Claude or in ChatGPT/Codex: section [Install](#install).
+2. **Start the wizard**: in Claude Code type `/citadel`; in Codex write `Use the citadel skill`.
+3. **Follow the steps.** The wizard works on Mac and Windows and goes from an empty computer to an app online: tools, work folder, connection with your token, interview, build, try, publish. It does the technical part; you choose, try and type your token.
+
+You need a Citadel token: ask the person who installed Citadel in your company (the operator). The wizard tells you what to ask.
+
 The configuration is managed by `citadel-connect`. Each project can have its own environment in `.citadel/config.json`, at the repo root (excluded from git); if it is missing, the global one applies, `~/.config/citadel/config.json`. The `CITADEL_CONFIG` variable overrides both.
 
 ## Languages
@@ -29,7 +37,7 @@ Apps created with earlier, Italian versions of the skills have `scheda.md` inste
 
 ## Install
 
-- **Claude Code, as a plugin** (read access to this repo is needed):
+- **Claude Code, as a plugin** (read access to this repo is needed; in the Claude desktop app, type these in the Code tab):
   ```
   /plugin marketplace add Manfrini/citadel-skills
   /plugin install citadel-skills@citadel-skills
@@ -40,7 +48,7 @@ Apps created with earlier, Italian versions of the skills have `scheda.md` inste
   codex plugin marketplace add Manfrini/citadel-skills
   codex plugin add citadel-skills@citadel-skills
   ```
-  To get updates: `codex plugin marketplace upgrade`.
+  To get updates: `codex plugin marketplace upgrade`. On Windows, type them in PowerShell.
 - **Claude Code, by hand**: link each folder in `skills/` into `~/.claude/skills/`, or into `.claude/skills/` of the project you work in.
 - **claude.ai**: zip the skill folder and upload it from Settings → Capabilities → Skills. Only `citadel-interview` works there.
 

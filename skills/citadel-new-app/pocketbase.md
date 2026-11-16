@@ -140,12 +140,13 @@ All colours live in CSS variables on `:root`, as in the template: an app's style
 
 ## Local run
 
-Download PocketBase for your system from https://github.com/pocketbase/pocketbase/releases (the same minor version as the manifest), then:
+Download PocketBase for the user's system from https://github.com/pocketbase/pocketbase/releases (the same minor version as the manifest: `darwin_arm64` or `darwin_amd64` on Mac, `windows_amd64` on Windows), unzip it into the app folder (download it yourself with `curl` on Mac or `Invoke-WebRequest` on Windows: on Mac a binary downloaded from the browser is blocked by Gatekeeper), then run from there, on one line (Windows: `.\pocketbase.exe` in place of `./pocketbase`):
 
 ```sh
-pocketbase serve --http 127.0.0.1:8090 --dir /tmp/<name>-pb \
-  --migrationsDir <name>/pkg/pb_migrations --hooksDir <name>/pkg/pb_hooks --publicDir <name>/pkg/pb_public
-pocketbase superuser upsert <email> <password> --dir /tmp/<name>-pb   # to enter /_/ and create test users
+./pocketbase serve --http 127.0.0.1:8090 --dir .pb-data --migrationsDir pkg/pb_migrations --hooksDir pkg/pb_hooks --publicDir pkg/pb_public
+./pocketbase superuser upsert <email> <password> --dir .pb-data
 ```
+
+The second command creates the account to enter `/_/` and add test users. `.pb-data` holds only local test data: keep it and the binary out of `pkg/`, and add both to `.gitignore` if the folder is a git repo. The app opens at http://127.0.0.1:8090.
 
 Locally, outbound internet access is open. The run proves that migrations, hooks and pages work, not that the `egress` hosts will be authorised.
