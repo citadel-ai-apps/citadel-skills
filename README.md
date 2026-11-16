@@ -1,5 +1,7 @@
 # Citadel skills
 
+Website: [try.citadel-ai-apps.workers.dev](https://try.citadel-ai-apps.workers.dev/?utm_source=github&utm_content=skills)
+
 Skills to create apps to publish on Citadel, without the Citadel repo.
 
 | Skill | Step |
