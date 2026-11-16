@@ -1,60 +1,71 @@
-// Client REST di PocketBase. Nessun DOM: `fetch` e `storage` arrivano da fuori,
-// così i test li sostituiscono. Nel browser: creaClient({ fetch: fetch.bind(window), storage: localStorage }).
+// PocketBase REST client. No DOM: `fetch` and `storage` come from outside,
+// so tests can replace them. In the browser:
+//   createClient({ fetch: fetch.bind(window), storage: localStorage, messages: { ... } })
+// `messages` holds the user-facing texts: pass them in the app's language (spec, `language`).
 
-function errore(status, messaggio) {
-  const e = new Error(messaggio);
+const MESSAGES = {
+  offline: 'No connection, try again',
+  tooMany: 'Too many attempts, try again shortly',
+  expired: 'Session expired, sign in again',
+  badLogin: 'Wrong email or password',
+  error: (status) => `Error ${status}`,
+};
+
+function failure(status, message) {
+  const e = new Error(message);
   e.status = status;
   return e;
 }
 
-export function creaClient({ base = '', fetch, storage, chiave = 'sessione' }) {
-  // Lo storage può mancare o lanciare (navigazione privata): la sessione vive comunque in memoria.
-  let sessione = null;
-  try { sessione = JSON.parse(storage.getItem(chiave)) || null; } catch { sessione = null; }
+export function createClient({ base = '', fetch, storage, key = 'session', messages = {} }) {
+  const t = { ...MESSAGES, ...messages };
+  // Storage may be missing or throw (private browsing): the session still lives in memory.
+  let session = null;
+  try { session = JSON.parse(storage.getItem(key)) || null; } catch { session = null; }
 
-  function salva(s) {
-    sessione = s;
-    try { s ? storage.setItem(chiave, JSON.stringify(s)) : storage.removeItem(chiave); } catch { /* solo memoria */ }
+  function save(s) {
+    session = s;
+    try { s ? storage.setItem(key, JSON.stringify(s)) : storage.removeItem(key); } catch { /* memory only */ }
   }
 
-  async function chiama(path, { method = 'GET', body, auth = true } = {}) {
+  async function call(path, { method = 'GET', body, auth = true } = {}) {
     const headers = {};
     if (body !== undefined) headers['Content-Type'] = 'application/json';
-    if (auth && sessione) headers.Authorization = sessione.token;
+    if (auth && session) headers.Authorization = session.token;
     const opt = { method, headers };
     if (body !== undefined) opt.body = JSON.stringify(body);
     let r;
-    try { r = await fetch(base + path, opt); } catch { throw errore(0, 'Connessione assente, riprova'); }
-    if (r.status === 429) throw errore(429, 'Troppi tentativi, riprova tra poco');
-    if (r.status === 401 && sessione) { salva(null); throw errore(401, 'Sessione scaduta, accedi di nuovo'); }
-    const dati = r.status === 204 ? null : await r.json().catch(() => null);
-    if (!r.ok) throw errore(r.status, (dati && dati.message) || `Errore ${r.status}`);
-    return dati;
+    try { r = await fetch(base + path, opt); } catch { throw failure(0, t.offline); }
+    if (r.status === 429) throw failure(429, t.tooMany);
+    if (r.status === 401 && session) { save(null); throw failure(401, t.expired); }
+    const data = r.status === 204 ? null : await r.json().catch(() => null);
+    if (!r.ok) throw failure(r.status, (data && data.message) || t.error(r.status));
+    return data;
   }
 
   const rec = (c, id = '') => `/api/collections/${encodeURIComponent(c)}/records${id ? '/' + encodeURIComponent(id) : ''}`;
 
   return {
-    utente: () => (sessione ? sessione.record : null),
+    user: () => (session ? session.record : null),
     async login(email, password) {
       try {
-        const d = await chiama('/api/collections/users/auth-with-password', {
+        const d = await call('/api/collections/users/auth-with-password', {
           method: 'POST', body: { identity: email, password }, auth: false,
         });
-        salva({ token: d.token, record: d.record });
+        save({ token: d.token, record: d.record });
       } catch (e) {
-        if (e.status === 400) throw errore(400, 'Email o password non corretti');
+        if (e.status === 400) throw failure(400, t.badLogin);
         throw e;
       }
     },
-    logout: () => salva(null),
-    elenco(c, { filter, sort = '-created', perPage = 50 } = {}) {
+    logout: () => save(null),
+    list(c, { filter, sort = '-created', perPage = 50 } = {}) {
       const q = new URLSearchParams({ sort, perPage: String(perPage) });
       if (filter) q.set('filter', filter);
-      return chiama(`${rec(c)}?${q}`);
+      return call(`${rec(c)}?${q}`);
     },
-    crea: (c, dati) => chiama(rec(c), { method: 'POST', body: dati }),
-    modifica: (c, id, dati) => chiama(rec(c, id), { method: 'PATCH', body: dati }),
-    cancella: (c, id) => chiama(rec(c, id), { method: 'DELETE' }),
+    create: (c, data) => call(rec(c), { method: 'POST', body: data }),
+    update: (c, id, data) => call(rec(c, id), { method: 'PATCH', body: data }),
+    remove: (c, id) => call(rec(c, id), { method: 'DELETE' }),
   };
 }

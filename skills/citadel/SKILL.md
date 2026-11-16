@@ -1,33 +1,73 @@
 ---
 name: citadel
-description: Punto d'ingresso per Citadel, la piattaforma aziendale che ospita app PocketBase. Spiega cosa si può fare e indirizza alla skill giusta. Usala quando l'utente chiede cos'è Citadel, cosa può fare, come si accede, come si crea, pubblica o modifica un'app, o quando non è chiaro da quale passo partire.
+description: Step-by-step wizard for Citadel, the company platform that hosts PocketBase apps - from an empty computer to an app online. Use it when the user wants to create an app on Citadel, asks how to start, what Citadel is or what to do next, or when it is unclear which Citadel skill comes next.
 ---
 
-# Citadel
+# Citadel wizard
 
-Citadel ospita le app interne dell'azienda. Ogni app ha i suoi dati, una pagina web e un indirizzo proprio. Gira isolata dalle altre, e può collegarsi all'esterno solo verso ciò che è stato autorizzato. Chi crea un'app non ha bisogno di sapere programmare: descrive cosa gli serve, e il resto lo fanno le skill.
+Citadel hosts the company's internal apps. Each app has its own data, a web page and its own address, runs isolated from the others, and reaches the outside only where that has been authorised. Whoever creates an app does not need to code: they describe what they need, and the skills do the rest.
 
-Tono **asciutto**: rispondi con i passi qui sotto, poi chiedi da dove partire.
+**Language**: talk to the user in the user's language (the `language` setting if there is one, otherwise the language they write in). Skill names, commands and file names stay as they are.
 
-## I passi
+**Tone: terse and childproof.** The user may never have opened a terminal.
 
-| Voglio… | Skill | Serve |
+## How the wizard talks
+
+- **One step per message**, headed "Step N of 7: <name>". At most two lines on what the step is for, in everyday words, then what to do.
+- **You do the work you can**: run commands, check versions, create folders, call the other skills. The user does only what needs a person: choices, sending a message to the operator, typing the token, trying the app.
+- **Copy blocks**: whenever the user has to type something, give it in a code block, one command per block, filled in with real values (absolute paths in double quotes, never a `<placeholder>`). On Mac the command is `python3`, on Windows `py` (or `python` if `py` is not recognised).
+- **Mac or Windows, Claude or ChatGPT**: find out the system yourself (run a command) and give only the instructions for that system. Ask only when you cannot tell.
+- **Resume**: every time the wizard starts, work out where the user is (steps 1-3 by checking, then which apps have `spec.md` and `pkg/`), say in one line what is already done and start from the first step that is not.
+
+## The steps
+
+### Step 1 of 7: tools
+
+Check yourself: Python 3 (`python3 --version`, on Windows `py --version`) and Node.js 18 or later (`node --version`). If something is missing, offer to install it, or give the user the command:
+
+| Missing | Mac | Windows (PowerShell) |
 |---|---|---|
-| collegarmi a Citadel | `citadel-connect` | indirizzo del portale e token, dall'operatore |
-| creare un'app nuova | `citadel-interview`, poi `citadel-new-app`, poi `citadel-publish` | un'idea; il nome breve dell'app, creato dall'operatore |
-| modificare un'app | `citadel-edit-app` | la cartella di lavoro dell'app |
-| ripubblicare un'app | `citadel-publish` | la cartella di lavoro dell'app |
+| Python 3 | download from python.org/downloads, open the file, click Continue to the end | `winget install -e --id Python.Python.3.12` |
+| Node.js | download the LTS version from nodejs.org, open the file, click Continue to the end | `winget install -e --id OpenJS.NodeJS.LTS` |
 
-L'intervista si può fare anche senza collegamento a Citadel. Costruzione e pubblicazione richiedono un agente che lavora sul computer, come Claude Code o Codex.
+After installing, the terminal and the agent app (Claude or Codex) must be closed and reopened. Done when both versions answer.
 
-## Chi fa cosa
+If you are a chat without access to the computer (claude.ai, ChatGPT in the browser), you cannot do steps 1-3 and 5-7. Do the interview (step 4), then tell the user to continue on the computer with Claude Code (the Code tab of the Claude desktop app) or Codex (from ChatGPT), with this plugin installed (README of the plugin).
 
-- **L'utente** descrive l'app, la prova, la pubblica e la modifica.
-- **L'operatore di Citadel** crea le app nuove, consegna i token e approva i collegamenti che non sono automatici: un servizio indicato con un jolly, l'invio di email, un indirizzo proprio.
-- **Citadel** registra ogni pubblicazione e ogni autorizzazione. Se una pubblicazione fallisce, rimette online da solo la versione precedente.
+### Step 2 of 7: work folder
 
-## Da dove partire
+One folder holds all the user's apps, one subfolder per app. Suggest `Documents/citadel-apps` in their home folder, create it, and work from there for the rest of the wizard. Done when the folder exists.
 
-Leggi la configurazione con `python3 <cartella di citadel-connect>/connect.py check`:
-- se manca, o il portale non risponde, o il token non è valido, si parte da `citadel-connect`, che raccoglie i dati con domande guidate;
-- se c'è, mostra le app note con `connect.py apps` e chiedi se crearne una nuova o modificarne una.
+### Step 3 of 7: connect to Citadel
+
+Use `citadel-connect`. The first time, it follows its tutorial: the user asks the operator for a token and types it hidden in a terminal. Done when `connect.py check` is green.
+
+Waiting for the operator does not block the wizard: the interview (step 4) works without a connection. Come back here before step 7.
+
+### Step 4 of 7: describe the app
+
+Use `citadel-interview`: about ten guided questions, a summary in plain words, then the spec in `<app>/spec.md`. Done when the user has confirmed the summary and the spec is written.
+
+### Step 5 of 7: build
+
+Use `citadel-new-app`. The user confirms the plan; you build and run the checks. Done when its three checks pass.
+
+### Step 6 of 7: try it
+
+`citadel-new-app` ends by starting the app on the user's computer (its step 5, "Show it"): the user opens the link, tries it, asks for changes. Done when the user says it does what they expected. Nothing is published before.
+
+### Step 7 of 7: publish
+
+Use `citadel-publish`. Close with the app's address, how people get in, and any connection still waiting for the operator's approval.
+
+## After the first app
+
+- **Change an app**: `citadel-edit-app` (the user can just say "I want to change <app>").
+- **Republish**: `citadel-publish`.
+- **New app**: start again from step 4; steps 1-3 are done once per computer.
+
+## Who does what
+
+- **The user** describes the app, tries it, publishes it and changes it.
+- **The Citadel operator** creates new apps, hands out tokens and approves the connections that are not automatic: a service given with a wildcard, sending email, a custom address.
+- **Citadel** records every publication and every authorisation. If a publication fails, it puts the previous version back online by itself.

@@ -1,87 +1,93 @@
 ---
 name: citadel-interview
-description: Intervista guidata per un'app nuova da pubblicare su Citadel. Fa domande semplici a chi non è tecnico, restituisce un riepilogo a parole di ciò che vedrà e scrive la scheda da cui si costruisce l'app. Usala quando qualcuno vuole creare un'app su Citadel, o quando si deve costruire un'app che non ha ancora una scheda (`<nome>/scheda.md`).
+description: Guided interview for a new app to publish on Citadel. Asks simple questions to non-technical people, gives back a plain-words summary of what they will see, and writes the spec the app is built from. Use it when someone wants to describe the app they need, when the Citadel wizard reaches the interview, or when an app has to be built and has no spec yet (`<name>/spec.md`). Works without a connection to Citadel.
 ---
 
-# Intervista per un'app Citadel
+# Interview for a Citadel app
 
-Chi risponde di solito non è tecnico. Tu traduci: domande in parole di tutti i giorni, conseguenze tecniche solo nella scheda.
+The person answering is usually not technical. You translate: questions in everyday words, technical consequences only in the spec.
 
-Tono **asciutto** in ogni messaggio: frasi brevi, elenchi, niente premesse. Ti allunghi solo se l'utente lo chiede.
+## Language
 
-## 1. Apertura
+- **Conversation**: in the user's language (the `language` setting if there is one, otherwise the language they write in). The example questions below are in English: ask them in the user's language.
+- **App**: the app's language is the conversation language. Do not ask about it. Write it in the spec's `Language` field; if the user asks for another language, use that one.
+- **Spec**: the "For the requester" half is in the conversation language, in the user's words. The "For the builder" half, headings and field names stay in English, so anyone can build the app.
 
-Un solo messaggio di due righe: farai qualche domanda, poi gli mostrerai cosa hai capito prima di scrivere. Nello stesso messaggio fai la prima domanda.
+**Tone: terse** in every message: short sentences, lists, no preamble. Go longer only if the user asks.
 
-## 2. Intervista
+## 1. Opening
 
-L'intervista è **guidata**: l'utente sceglie tra risposte già pronte e scrive solo quando vuole.
+A single two-line message: you will ask a few questions, then show what you understood before writing anything. Ask the first question in the same message.
 
-- **Con lo strumento delle domande a scelta** (in Claude Code è `AskUserQuestion`; altri agenti possono averne uno equivalente): usalo per ogni tema tranne Idea e Contenuto, che chiedono un racconto libero. Fai una domanda per chiamata, o al massimo due molto vicine (per esempio Persone e Ingresso). Ogni domanda ha 2-4 opzioni con un'etichetta breve e una descrizione di una riga che dice cosa comporta, nelle parole dell'utente. Costruisci le opzioni da quello che già sai: se dall'Idea hai capito che l'app è per un piccolo gruppo, le opzioni di Ingresso partono da lì. Metti per prima la scelta più sensata e aggiungi "(consigliata)" all'etichetta. L'utente può sempre scrivere una risposta sua.
-- **Senza lo strumento** (per esempio in claude.ai, o in un agente che non ce l'ha): una domanda per messaggio, con le opzioni numerate sotto, così l'utente può rispondere con un numero.
+## 2. Interview
 
-Ogni domanda è discorsiva e breve. Tra una domanda e l'altra al massimo una riga di commento ("Chiaro, quindi siete in tre.").
+The interview is **guided**: the user picks from ready-made answers and types only when they want to.
 
-Parla di persone, situazioni ed esempi. Le parole tecniche (lettura/scrittura, permessi, collezione, database, API, URL, endpoint, autenticazione) restano dentro di te: l'utente racconta, tu deduci.
+- **With the multiple-choice question tool** (in Claude Code it is `AskUserQuestion`; other agents may have an equivalent): use it for every topic except Idea and Content, which need a free account. One question per call, or at most two very close ones (for example People and Sign-in). Each question has 2-4 options with a short label and a one-line description of what it implies, in the user's words. Build the options from what you already know: if the Idea told you the app is for a small group, the Sign-in options start from there. Put the most sensible choice first and add "(recommended)" to its label. The user can always type their own answer.
+- **Without the tool** (for example in claude.ai, or an agent that does not have it): one question per message, with numbered options below, so the user can answer with a number.
 
-Copri questi temi, nell'ordine che la conversazione rende naturale. Salta quelli a cui l'utente ha già risposto da solo.
+Each question is conversational and short. Between questions, at most one line of comment ("Got it, so there are three of you.").
 
-| Tema | Cosa ti serve capire | Come chiederlo, per esempio |
+Talk about people, situations and examples. Technical words (read/write, permissions, collection, database, API, URL, endpoint, authentication) stay with you: the user tells the story, you work it out.
+
+Cover these topics, in whatever order the conversation makes natural. Skip the ones the user has already answered.
+
+| Topic | What you need to understand | How to ask, for example |
 |---|---|---|
-| Idea | che problema risolve e che tipo di app è (registro, modulo di raccolta, cruscotto, calcolatore, prenotazioni, checklist…) | "Raccontami in due righe cosa vorresti. Oggi come lo fai?" |
-| Persone | chi la usa e quante sono | "Chi la userà? Solo tu, il tuo team, dei clienti, chiunque abbia il link?" |
-| Ingresso | come si entra: senza account, su invito, iscrizione libera, con l'account aziendale | "Come immagini che entrino? Li inviti tu, si iscrivono da soli, o basta aprire il link?" |
-| Cosa vede ognuno | dati di ciascuno o condivisi; chi vede tutto | "Le persone vedono tutte le stesse cose, o ognuno solo le sue? C'è qualcuno che deve vedere tutto?" |
-| Chi cambia cosa | chi aggiunge, modifica, cancella, approva | "Chi inserisce le informazioni? E se c'è un errore, chi lo corregge?" |
-| Contenuto | le informazioni da conservare, con un caso concreto; se servono foto o documenti | "Fammi un esempio di una voce, come la scriveresti su un foglio." |
-| Collegamenti | se deve prendere o mandare informazioni fuori: siti e servizi pubblici, sistemi o database dell'azienda, email o notifiche | "Deve prendere o mandare informazioni da qualche altra parte? Un sito, un gestionale, un archivio dell'azienda? Deve mandare email?" |
-| Dati delicati | dati personali, sanitari, economici, di terzi | "Ci finiranno dati delle persone, come nomi, contatti, salute o soldi?" |
-| Uso | telefono o computer, frequenza | "La useranno più dal telefono o dal computer?" |
-| Aspetto | stile aziendale (colori, logo, carattere) o neutro; tema chiaro, scuro o entrambi | "Deve avere i colori e il logo della tua azienda?" e poi "Preferisci uno sfondo chiaro, scuro, o che segua le impostazioni del computer?" |
-| Prima versione | la cosa minima che deve funzionare | "Qual è la prima cosa che vuoi riuscire a fare? Il resto può venire dopo." |
+| Idea | what problem it solves and what kind of app it is (log, collection form, dashboard, calculator, bookings, checklist…) | "Tell me in two lines what you'd like. How do you do it today?" |
+| People | who uses it and how many | "Who will use it? Just you, your team, customers, anyone with the link?" |
+| Sign-in | how people get in: no account, by invitation, open sign-up, with the company account | "How do you picture them getting in? You invite them, they sign up, or they just open the link?" |
+| What each person sees | everyone's own data or shared data; who sees everything | "Does everyone see the same things, or only their own? Is there someone who must see everything?" |
+| Who changes what | who adds, edits, deletes, approves | "Who enters the information? And if there's a mistake, who fixes it?" |
+| Content | the information to keep, with a concrete case; whether photos or documents are needed | "Give me an example of one entry, as you'd write it on paper." |
+| Connections | whether it must fetch or send information elsewhere: public sites and services, company systems or databases, email or notifications | "Does it need to get or send information somewhere else? A website, a management system, a company archive? Does it need to send email?" |
+| Sensitive data | personal, health, financial or third-party data | "Will it hold people's data, like names, contacts, health or money?" |
+| Use | phone or computer, how often | "Will they use it more from the phone or the computer?" |
+| Look | company style (colours, logo, font) or neutral; light theme, dark or both | "Should it have your company's colours and logo?" and then "Do you prefer a light background, dark, or one that follows the computer's setting?" |
+| First version | the minimum that must work | "What's the first thing you want to be able to do? The rest can come later." |
 
-Per l'aspetto, se la configurazione di Citadel (il file che indica `connect.py check`) ha una sezione `brand`, proponi quello stile come prima opzione: è lo stile aziendale già deciso. Altrimenti le opzioni sono "lo stile della mia azienda" (poi chiedi colori e logo, o un sito da cui prenderli) e "uno stile semplice e neutro". Per il tema, la scelta consigliata è "segue il computer, con un interruttore chiaro/scuro".
+For the look, if the Citadel configuration (the file `connect.py check` points to) has a `brand` section, offer that style as the first option: it is the company style already decided. Otherwise the options are "my company's style" (then ask for colours and logo, or a website to take them from) and "a simple, neutral style". For the theme, the recommended choice is "follows the computer, with a light/dark switch".
 
-Per i collegamenti basta sapere **che cosa** collegare e a cosa serve: indirizzi e dettagli tecnici si raccolgono dopo (passo 4).
+For connections it is enough to know **what** to connect and what for: addresses and technical details are collected later (step 4).
 
-Quando l'utente risponde "non so", proponi tu una scelta ragionevole in una riga e segnala che è una proposta. Le chiavi d'accesso e le password restano fuori dalla chat: se l'utente le offre, digli che le consegnerà a chi costruisce l'app.
+When the user answers "I don't know", propose a reasonable choice in one line and flag it as a proposal. Access keys and passwords stay out of the chat: if the user offers them, tell them they will hand them to whoever builds the app.
 
-Il passo è finito quando ogni tema ha una risposta, una tua proposta accettata o la nota "da decidere".
+The step is done when every topic has an answer, a proposal of yours that was accepted, or the note "to decide".
 
-## 3. Riepilogo
+## 3. Summary
 
-Mostra cosa hai capito, in questo formato:
+Show what you understood in this format, in the conversation language (headings included):
 
 ```
-**Cosa ho capito**
-- A cosa serve: …
-- Chi la usa e come entra: …
-- Chi vede cosa, chi cambia cosa: …
-- Collegamenti: … (oppure: nessuno)
-- Dati delicati: … (oppure: nessuno)
+**What I understood**
+- What it's for: …
+- Who uses it and how they get in: …
+- Who sees what, who changes what: …
+- Connections: … (or: none)
+- Sensitive data: … (or: none)
 
-**Cosa vedrai**
-<una passeggiata in 4-6 righe: "Apri il link dal telefono → vedi … → tocchi … → compare …". Descrivi le schermate principali con le parole dell'utente, compresa quella di ingresso.>
+**What you'll see**
+<a walk-through in 4-6 lines: "You open the link on your phone → you see … → you tap … → … appears". Describe the main screens in the user's words, including the sign-in one.>
 
-**Prima versione**
-- Dentro: …
-- Dopo: …
+**First version**
+- In: …
+- Later: …
 
-**Da decidere**: … (oppure: niente)
+**To decide**: … (or: nothing)
 ```
 
-Poi chiedi se va bene o cosa cambiare, con lo strumento delle domande a scelta se c'è ("Va bene così" / "Voglio cambiare qualcosa"). Correggi e mostra di nuovo solo le parti cambiate, finché l'utente non conferma.
+Then ask whether it is right or what to change, with the multiple-choice tool if there is one ("Looks good" / "I want to change something"). Fix it and show again only the parts that changed, until the user confirms.
 
-## 4. Scheda
+## 4. Spec
 
-Scrivi la scheda seguendo [scheda-modello.md](scheda-modello.md), che spiega anche come tradurre le risposte in scelte per Citadel.
+Write the spec following [spec-template.md](spec-template.md), which also explains how to turn the answers into Citadel choices.
 
-- Con accesso ai file (Claude Code, Codex o un altro agente che lavora sul computer): salvala in `<nome>/scheda.md` nella cartella di lavoro. Quella cartella diventerà l'app.
-- Senza accesso ai file (per esempio claude.ai): consegnala come file da scaricare.
+- With file access (Claude Code, Codex or another agent working on the computer): save it as `<name>/spec.md` in the working folder. That folder will become the app.
+- Without file access (for example claude.ai): hand it over as a file to download.
 
-## 5. Chiusura
+## 5. Closing
 
-Un messaggio breve:
-- dove si trova la scheda;
-- **cosa serve per costruirla**: la sezione "Informazioni da raccogliere" della scheda, con chi deve fornire ogni cosa;
-- il passo successivo: costruire l'app con `citadel-new-app`.
+A short message:
+- where the spec is;
+- **what is needed to build it**: the spec's "Information to collect" section, with who must provide each item;
+- the next step: build the app with `citadel-new-app`.

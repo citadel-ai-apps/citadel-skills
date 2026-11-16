@@ -1,11 +1,12 @@
 <!doctype html>
-<html lang="it">
+<!-- lang: the app's language from the spec (`language`), e.g. "en" or "it". -->
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>NOME</title>
+  <title>NAME</title>
   <style>
-    /* Colori in un punto solo. --accent e --accent-2 sono lo stile aziendale (vedi la scheda, sezione Aspetto). */
+    /* Colours in one place. --accent and --accent-2 are the company style (see the spec, Look section). */
     :root { --bg: #f6f5f1; --fg: #1c1c1a; --muted: #6b6a64; --card: #fff; --line: #e3e1da; --accent: #2f5d50; --on-accent: #fff; --accent-2: #8a4b12; --warn: #8a4b12; color-scheme: light; }
     @media (prefers-color-scheme: dark) {
       :root:not([data-theme="light"]) { --bg: #141413; --fg: #ecebe6; --muted: #a09f98; --card: #1e1e1c; --line: #2e2e2b; --accent: #8cc2b0; --on-accent: #141413; --accent-2: #e2a56b; --warn: #e2a56b; color-scheme: dark; }
@@ -15,15 +16,15 @@
     body { margin: 0; padding: 16px; background: var(--bg); color: var(--fg);
       font: 16px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif; }
     main { max-width: 40rem; margin: 0 auto; }
-    .scheda { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 1rem 1.25rem; }
-    .muto { color: var(--muted); }
-    .errore { color: var(--warn); }
+    .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 1rem 1.25rem; }
+    .muted { color: var(--muted); }
+    .error { color: var(--warn); }
     button { font: inherit; padding: .45rem 1rem; border-radius: 999px; border: 1px solid var(--accent);
       background: var(--accent); color: var(--on-accent); cursor: pointer; }
     header { display: flex; align-items: center; gap: .75rem; }
     header img { height: 2rem; }
     header h1 { margin: 0; font-size: 1.4rem; flex: 1; }
-    #tema { background: transparent; color: var(--fg); border-color: var(--line); padding: .3rem .7rem; }
+    #theme { background: transparent; color: var(--fg); border-color: var(--line); padding: .3rem .7rem; }
     input, select, textarea { font: inherit; width: 100%; padding: .5rem; border: 1px solid var(--line);
       border-radius: 8px; background: var(--card); color: var(--fg); }
   </style>
@@ -31,26 +32,28 @@
 <body>
   <main>
     <header>
-      <!-- <img src="logo.svg" alt="NOME"> se la scheda prevede un logo -->
-      <h1>NOME</h1>
-      <button id="tema" type="button" aria-label="Cambia tema chiaro/scuro">◐</button>
+      <!-- <img src="logo.svg" alt="NAME"> if the spec has a logo -->
+      <h1>NAME</h1>
+      <!-- aria-label in the app's language -->
+      <button id="theme" type="button" aria-label="Switch light/dark theme">◐</button>
     </header>
-    <p id="stato" class="muto" role="status"></p>
-    <section id="contenuto" class="scheda"></section>
+    <p id="status" class="muted" role="status"></p>
+    <section id="content" class="card"></section>
   </main>
   <script type="module">
-    import { creaClient } from './api.js';
-    const api = creaClient({ fetch: window.fetch.bind(window), storage: window.localStorage });
-    // Interruttore chiaro/scuro: la scelta vince sul sistema e resta salvata, se lo storage c'è.
+    import { createClient } from './api.js';
+    // Pass `messages` in the app's language when it is not English (see api.js).
+    const api = createClient({ fetch: window.fetch.bind(window), storage: window.localStorage });
+    // Light/dark switch: the choice wins over the system and is saved, if storage is available.
     const root = document.documentElement;
-    try { const t = localStorage.getItem('tema'); if (t) root.dataset.theme = t; } catch { /* nessuna preferenza */ }
-    document.getElementById('tema').addEventListener('click', () => {
-      const scuro = root.dataset.theme ? root.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
-      root.dataset.theme = scuro ? 'light' : 'dark';
-      try { localStorage.setItem('tema', root.dataset.theme); } catch { /* solo per questa visita */ }
+    try { const t = localStorage.getItem('theme'); if (t) root.dataset.theme = t; } catch { /* no preference */ }
+    document.getElementById('theme').addEventListener('click', () => {
+      const dark = root.dataset.theme ? root.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+      root.dataset.theme = dark ? 'light' : 'dark';
+      try { localStorage.setItem('theme', root.dataset.theme); } catch { /* this visit only */ }
     });
 
-    // Qui le schermate dell'app.
+    // The app's screens go here.
   </script>
 </body>
 </html>

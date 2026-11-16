@@ -1,6 +1,6 @@
 {
   "name": "citadel-skills",
-  "description": "Skill per creare, pubblicare e modificare app PocketBase su Citadel: collegamento, intervista, costruzione, pubblicazione.",
+  "description": "Skills to create, publish and change PocketBase apps on Citadel: connect, interview, build, publish. They talk in the user's language.",
   "author": {
     "name": "Marco Manfrini"
   },
@@ -12,8 +12,8 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "Citadel",
-    "shortDescription": "Crea e pubblica app su Citadel",
-    "longDescription": "Collega il computer a Citadel, raccoglie con un'intervista cosa deve fare un'app, la costruisce come pacchetto PocketBase, la pubblica e la modifica.",
+    "shortDescription": "Create and publish apps on Citadel",
+    "longDescription": "Connects the computer to Citadel, finds out with an interview what an app must do, builds it as a PocketBase package, publishes it and changes it. It talks in the user's language.",
     "developerName": "Marco Manfrini",
     "category": "Productivity",
     "capabilities": [
@@ -21,9 +21,9 @@
       "Write"
     ],
     "defaultPrompt": [
-      "Collegami a Citadel",
-      "Voglio creare un'app nuova su Citadel",
-      "Ripubblica la mia app su Citadel"
+      "Connect me to Citadel",
+      "I want to create a new app on Citadel",
+      "Republish my app on Citadel"
     ]
   }
 }

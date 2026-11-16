@@ -1,34 +1,34 @@
-# Il pacchetto Citadel
+# The Citadel package
 
-## Contenuto
+## Contents
 
-Uno zip che contiene **solo**:
+A zip that contains **only**:
 
 ```
 pbapp.json       manifest
-pb_migrations/   *.js     schema dei dati, applicato al deploy
-pb_hooks/        *.js     logica lato server (*.pb.js caricati da soli, gli altri via require)
-pb_public/       qualsiasi file statico, servito alla radice del sito
+pb_migrations/   *.js     data schema, applied on deploy
+pb_hooks/        *.js     server-side logic (*.pb.js loaded automatically, the others via require)
+pb_public/       any static file, served at the site root
 ```
 
-Citadel rifiuta il caricamento, indicando il percorso che non va, quando:
-- c'è un file fuori da queste quattro voci;
-- in `pb_migrations/` o `pb_hooks/` c'è un file che non è `.js`;
-- un file è un link simbolico, ha il bit eseguibile o setuid, oppure è un percorso assoluto o contiene `..`;
-- si superano 50 MiB non compressi o 2000 file, oppure la compressione è sospetta (rapporto oltre 200);
-- il manifest non è valido (vedi sotto).
+Citadel rejects the upload, naming the path at fault, when:
+- there is a file outside these four entries;
+- `pb_migrations/` or `pb_hooks/` contains a file that is not `.js`;
+- a file is a symbolic link, has the executable or setuid bit, or is an absolute path or contains `..`;
+- it exceeds 50 MiB uncompressed or 2000 files, or the compression is suspicious (ratio above 200);
+- the manifest is not valid (see below).
 
-`check_package.py` controlla tutto questo in locale.
+`check_package.py` checks all of this locally.
 
 ## Manifest (`pbapp.json`)
 
 ```json
 {
   "schemaVersion": 1,
-  "name": "prenota-sale",
+  "name": "room-booking",
   "version": "1.0.0",
   "pocketbase": { "min": "0.38.0", "max": "0.41.x" },
-  "egress": ["api.esempio.it"],
+  "egress": ["api.example.com"],
   "healthcheck": { "path": "/api/health", "expectStatus": 200 },
   "smoke": [
     { "method": "GET", "path": "/", "expectStatus": 200 }
@@ -36,17 +36,17 @@ Citadel rifiuta il caricamento, indicando il percorso che non va, quando:
 }
 ```
 
-- `schemaVersion`: sempre `1`.
-- `name`, `version`: testo, al massimo 64 caratteri. Aumenta `version` a ogni pubblicazione.
-- `pocketbase`: l'intervallo di versioni compatibili. `x` è ammesso solo dopo la versione principale (`0.40.x`). Deve contenere almeno una versione offerta dalla piattaforma: oggi `0.38.2`, `0.40.4` e `0.41.1` (c'è anche `0.22.55`, ma ha un'API JS diversa e queste skill non la usano). Al deploy Citadel controlla anche che la versione dell'app di destinazione, scelta dall'operatore quando la crea, sia dentro l'intervallo: se non lo è, il deploy viene rifiutato.
-- `egress`: gli host esterni che l'app chiamerà dal server. È una **richiesta**: un host preciso viene autorizzato in automatico, un jolly (`*.esempio.it`) attende un approvatore. Sono rifiutati indirizzi IP, jolly sul dominio di primo livello, reti private, domini della piattaforma. Vuoto o assente vuol dire nessuna uscita verso internet.
-- `healthcheck`: predefinito `GET /api/health` → 200.
-- `smoke`: richieste ripetute dopo ogni deploy. Se una fallisce, Citadel torna alla versione precedente, codice e dati. Un percorso che non esiste risponde comunque 200, perché PocketBase restituisce `index.html`: un `GET` con 200 atteso non prova che un file o una rotta ci siano. Per ogni rotta degli hook metti quindi un caso che solo la rotta vera produce, come un parametro non valido → 400 o una rotta protetta senza accesso → 401. Per ogni collezione metti la risposta che le sue regole impongono: per esempio `GET /api/collections/<c>/records` senza accesso → 200 con regole aperte, 403 con lettura chiusa a tutti.
+- `schemaVersion`: always `1`.
+- `name`, `version`: text, at most 64 characters. Increase `version` on every publication.
+- `pocketbase`: the range of compatible versions. `x` is allowed only after the major version (`0.40.x`). It must include at least one version the platform offers: today `0.38.2`, `0.40.4` and `0.41.1` (there is also `0.22.55`, but it has a different JS API and these skills do not use it). On deploy Citadel also checks that the target app's version, chosen by the operator when creating it, is inside the range: if not, the deploy is rejected.
+- `egress`: the external hosts the app will call from the server. It is a **request**: a precise host is authorised automatically, a wildcard (`*.example.com`) waits for an approver. IP addresses, wildcards on a top-level domain, private networks and platform domains are rejected. Empty or absent means no outbound internet access.
+- `healthcheck`: default `GET /api/health` → 200.
+- `smoke`: requests replayed after every deploy. If one fails, Citadel goes back to the previous version, code and data. A path that does not exist still answers 200, because PocketBase returns `index.html`: a `GET` expecting 200 does not prove a file or route exists. For each hook route, add a case only the real route produces, such as an invalid parameter → 400 or a protected route without access → 401. For each collection, add the answer its rules impose: for example `GET /api/collections/<c>/records` without access → 200 with open rules, 403 with reading closed to everyone.
 
-## Ambiente di esecuzione
+## Runtime
 
-- **Nessuna variabile d'ambiente** per l'app: le chiavi d'accesso vanno conservate come descritto in [pocketbase.md](pocketbase.md#chiavi-daccesso).
-- **Rete**: solo gli host di `egress` già autorizzati. Una chiamata a un host in attesa di approvazione fallisce, e il portale ne mostra il motivo.
-- **Filesystem in sola lettura**, tranne i dati di PocketBase. Niente shell: `$os.exec` e simili non funzionano.
-- **Disco** con quota per app: i campi `file` la consumano.
-- L'app risponde su `https://<nome breve>.<dominio delle app>`, dietro un proxy di Citadel.
+- **No environment variables** for the app: access keys are kept as described in [pocketbase.md](pocketbase.md#access-keys).
+- **Network**: only the `egress` hosts already authorised. A call to a host waiting for approval fails, and the portal shows why.
+- **Read-only filesystem**, except PocketBase's data. No shell: `$os.exec` and similar do not work.
+- **Disk** with a per-app quota: `file` fields use it.
+- The app answers at `https://<short name>.<apps domain>`, behind a Citadel proxy.

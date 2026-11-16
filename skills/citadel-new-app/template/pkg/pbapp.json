@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "name": "NOME",
+  "name": "NAME",
   "version": "0.1.0",
   "pocketbase": { "min": "0.38.0", "max": "0.41.x" },
   "egress": [],

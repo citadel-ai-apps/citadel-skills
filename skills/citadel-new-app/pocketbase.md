@@ -1,60 +1,63 @@
-# PocketBase su Citadel
+# PocketBase on Citadel
 
-API JS di PocketBase 0.23 e successive (le versioni offerte da Citadel per queste app sono 0.38, 0.40 e 0.41). Documentazione ufficiale: https://pocketbase.io/docs/js-overview/
+JS API of PocketBase 0.23 and later (the versions Citadel offers for these apps are 0.38, 0.40 and 0.41). Official docs: https://pocketbase.io/docs/js-overview/
 
-## Migrazioni
+Collection names, field names and identifiers are in English. Text the app's users read is in the spec's `Language`.
 
-Un file per passo, `pb_migrations/<timestamp unix>_<cosa>.js`. I file vengono applicati in ordine di nome, una volta sola. Una migrazione già pubblicata non si modifica: per cambiare qualcosa se ne aggiunge una nuova.
+## Migrations
+
+One file per step, `pb_migrations/<unix timestamp>_<what>.js`. Files are applied in name order, once. A migration already published is never edited: to change something, add a new one.
 
 ```js
 migrate((app) => {
     const users = app.findCollectionByNameOrId("users");
-    const voci = new Collection({
+    const items = new Collection({
         type: "base",
-        name: "voci",
-        listRule: "autore = @request.auth.id",
-        viewRule: "autore = @request.auth.id",
-        createRule: '@request.auth.id != "" && @request.body.autore = @request.auth.id',
-        updateRule: "autore = @request.auth.id && @request.body.autore:isset = false",
-        deleteRule: "autore = @request.auth.id",
+        name: "items",
+        listRule: "owner = @request.auth.id",
+        viewRule: "owner = @request.auth.id",
+        createRule: '@request.auth.id != "" && @request.body.owner = @request.auth.id',
+        updateRule: "owner = @request.auth.id && @request.body.owner:isset = false",
+        deleteRule: "owner = @request.auth.id",
         fields: [
-            { name: "autore", type: "relation", required: true, collectionId: users.id, maxSelect: 1, cascadeDelete: true },
-            { name: "titolo", type: "text", required: true, max: 200 },
-            { name: "stato", type: "select", values: ["aperta", "chiusa"], maxSelect: 1 },
+            { name: "owner", type: "relation", required: true, collectionId: users.id, maxSelect: 1, cascadeDelete: true },
+            { name: "title", type: "text", required: true, max: 200 },
+            { name: "status", type: "select", values: ["open", "closed"], maxSelect: 1 },
             { name: "created", type: "autodate", onCreate: true, onUpdate: false },
             { name: "updated", type: "autodate", onCreate: true, onUpdate: true },
         ],
-        indexes: ["CREATE INDEX idx_voci_autore ON voci (autore, created)"],
+        indexes: ["CREATE INDEX idx_items_owner ON items (owner, created)"],
     });
-    app.save(voci);
+    app.save(items);
 }, (app) => {
-    app.delete(app.findCollectionByNameOrId("voci"));
+    app.delete(app.findCollectionByNameOrId("items"));
 });
 ```
 
-- Tipi di campo: `text`, `number`, `bool`, `email`, `url`, `date`, `autodate`, `select` (`values`, `maxSelect`), `relation` (`collectionId`, `maxSelect`, `cascadeDelete`), `file` (`maxSelect`, `maxSize` in byte, `mimeTypes`), `json`, `editor`.
-- `created` e `updated` vanno dichiarati come campi `autodate`: una collezione creata da codice non li ha di suo.
+- Field types: `text`, `number`, `bool`, `email`, `url`, `date`, `autodate`, `select` (`values`, `maxSelect`), `relation` (`collectionId`, `maxSelect`, `cascadeDelete`), `file` (`maxSelect`, `maxSize` in bytes, `mimeTypes`), `json`, `editor`.
+- `created` and `updated` must be declared as `autodate` fields: a collection created from code does not have them by itself.
+- `select` values are stored data: keep them short English keys (`open`, `closed`) and show translated labels on the pages.
 
-### Regole
+### Rules
 
-| Valore | Significato |
+| Value | Meaning |
 |---|---|
-| `null` | nessuno tramite API, solo il proprietario dal pannello `/_/` |
-| `""` | chiunque, anche senza account |
-| `@request.auth.id != ""` | chiunque abbia fatto l'accesso |
-| `campo = @request.auth.id` | solo il proprietario della voce |
-| `@request.auth.ruolo = "responsabile"` | solo chi ha quel ruolo (campo sulla collezione `users`) |
+| `null` | nobody through the API, only the owner from the `/_/` panel |
+| `""` | anyone, even without an account |
+| `@request.auth.id != ""` | anyone who has signed in |
+| `field = @request.auth.id` | only the entry's owner |
+| `@request.auth.role = "manager"` | only people with that role (field on the `users` collection) |
 
-Sulla creazione, `@request.body.autore = @request.auth.id` impedisce di creare voci a nome di altri. Sulla modifica, `@request.body.autore:isset = false` impedisce di cambiare il proprietario.
+On create, `@request.body.owner = @request.auth.id` stops people creating entries in someone else's name. On update, `@request.body.owner:isset = false` stops the owner being changed.
 
-### Utenti e proxy
+### Users and proxy
 
-Se l'app ha utenti, aggiungi sempre questa migrazione. L'ingresso si adatta alla scheda: qui è su invito.
+If the app has users, always add this migration. Sign-in follows the spec: here it is by invitation.
 
 ```js
 migrate((app) => {
     const users = app.findCollectionByNameOrId("users");
-    users.createRule = null;                 // su invito; "" per l'iscrizione libera
+    users.createRule = null;                 // by invitation; "" for open sign-up
     users.passwordAuth.enabled = true;
     users.passwordAuth.identityFields = ["email"];
     users.oauth2.enabled = false;
@@ -62,9 +65,9 @@ migrate((app) => {
     users.mfa.enabled = false;
     app.save(users);
 
-    // Le richieste arrivano tutte dal proxy di Citadel, che aggiunge l'IP vero
-    // in coda a X-Forwarded-For. Senza queste due righe il rate limit vede un
-    // solo client per tutti.
+    // All requests come from Citadel's proxy, which appends the real IP
+    // to X-Forwarded-For. Without these two lines the rate limit sees a
+    // single client for everyone.
     const settings = app.settings();
     settings.trustedProxy.headers = ["X-Forwarded-For"];
     settings.trustedProxy.useLeftmostIP = false;
@@ -77,18 +80,18 @@ migrate((app) => {
 });
 ```
 
-Un campo `ruolo` si aggiunge con `users.fields.add(new SelectField({ name: "ruolo", values: [...], maxSelect: 1 }))`. Per impedire che un utente si assegni un ruolo da solo, la `updateRule` di `users` deve contenere `@request.body.ruolo:isset = false`.
+A `role` field is added with `users.fields.add(new SelectField({ name: "role", values: [...], maxSelect: 1 }))`. To stop users giving themselves a role, the `users` `updateRule` must contain `@request.body.role:isset = false`.
 
-## Hook
+## Hooks
 
-File `pb_hooks/*.pb.js`. **Ogni handler gira in un contesto isolato**: variabili e funzioni dichiarate fuori dall'handler non sono visibili dentro. Le costanti si dichiarano dentro l'handler. Il codice condiviso va in un modulo CommonJS, `pb_hooks/lib.js` con `module.exports = {...}`, caricato dentro l'handler con `require(`${__hooks}/lib.js`)`.
+Files `pb_hooks/*.pb.js`. **Each handler runs in an isolated context**: variables and functions declared outside the handler are not visible inside it. Constants are declared inside the handler. Shared code goes in a CommonJS module, `pb_hooks/lib.js` with `module.exports = {...}`, loaded inside the handler with `require(`${__hooks}/lib.js`)`.
 
 ```js
-routerAdd("GET", "/api/meteo", (e) => {
-    const citta = e.request.url.query().get("citta");
-    if (!/^[A-Za-zÀ-ú ]{2,40}$/.test(citta)) throw new BadRequestError("città non valida");
+routerAdd("GET", "/api/weather", (e) => {
+    const city = e.request.url.query().get("city");
+    if (!/^[A-Za-zÀ-ú ]{2,40}$/.test(city)) throw new BadRequestError("invalid city");
 
-    const url = "https://api.esempio.it/v1/meteo?q=" + encodeURIComponent(citta);
+    const url = "https://api.example.com/v1/weather?q=" + encodeURIComponent(city);
     const hit = $app.store().get(url);
     if (hit && Date.now() - hit.t < 600000) return e.json(200, hit.body);
 
@@ -96,53 +99,54 @@ routerAdd("GET", "/api/meteo", (e) => {
     try {
         r = $http.send({ url: url, method: "GET", timeout: 15 });
     } catch (err) {
-        throw new ApiError(502, "servizio meteo non raggiungibile", null);
+        throw new ApiError(502, "weather service unreachable", null);
     }
-    if (r.statusCode !== 200) throw new ApiError(502, "il servizio meteo ha risposto " + r.statusCode, null);
+    if (r.statusCode !== 200) throw new ApiError(502, "the weather service answered " + r.statusCode, null);
     $app.store().set(url, { t: Date.now(), body: r.json });
     return e.json(200, r.json);
 }, $apis.requireAuth());
 ```
 
-- **Rotte**: `routerAdd(metodo, percorso, handler, ...middleware)`. `$apis.requireAuth()` chiede l'accesso. Dentro l'handler: `e.auth` è l'utente, `e.requestInfo().body` il corpo, `e.request.url.query().get(k)` i parametri.
-- **Errori**: `BadRequestError`, `UnauthorizedError`, `ForbiddenError`, `NotFoundError`, `ApiError(stato, messaggio, dati)`.
-- **Collegamenti esterni**: l'host sta sempre nel codice dell'hook, mai in un parametro del browser. Valida l'input contro liste fisse o espressioni strette, metti un `timeout`, e trasforma gli errori in 502 con un messaggio leggibile. L'host va dichiarato in `egress`.
-- **Eventi sui record**: `onRecordCreateRequest((e) => { ...; e.next(); }, "voci")`. Chiama sempre `e.next()`.
-- **Query**: `$app.findRecordsByFilter("voci", "stato = {:s}", "-created", 50, 0, { s: "aperta" })`. Passa sempre i valori come parametri `{:nome}`, mai concatenati nel filtro.
-- **Lavori pianificati**: `cronAdd("nome", "0 * * * *", () => { ... })`.
+- **Routes**: `routerAdd(method, path, handler, ...middleware)`. `$apis.requireAuth()` requires sign-in. Inside the handler: `e.auth` is the user, `e.requestInfo().body` the body, `e.request.url.query().get(k)` the parameters.
+- **Errors**: `BadRequestError`, `UnauthorizedError`, `ForbiddenError`, `NotFoundError`, `ApiError(status, message, data)`. Messages the user will see go in the app's language.
+- **External connections**: the host is always in the hook's code, never in a browser parameter. Validate input against fixed lists or strict expressions, set a `timeout`, and turn errors into 502 with a readable message. The host must be declared in `egress`.
+- **Record events**: `onRecordCreateRequest((e) => { ...; e.next(); }, "items")`. Always call `e.next()`.
+- **Queries**: `$app.findRecordsByFilter("items", "status = {:s}", "-created", 50, 0, { s: "open" })`. Always pass values as `{:name}` parameters, never concatenated into the filter.
+- **Scheduled jobs**: `cronAdd("name", "0 * * * *", () => { ... })`.
 
-### Chiavi d'accesso
+### Access keys
 
-Citadel non passa variabili d'ambiente all'app. Le chiavi vanno in una collezione `impostazioni` (`chiave`, `valore`) con tutte le regole a `null`. Il proprietario la compila dal pannello `/_/`, e l'hook la legge con `$app.findFirstRecordByData("impostazioni", "chiave", "meteo").get("valore")`. Il valore non compare mai nel pacchetto né nella scheda.
+Citadel does not pass environment variables to the app. Keys go in a `settings` collection (`key`, `value`) with every rule set to `null`. The owner fills it in from the `/_/` panel, and the hook reads it with `$app.findFirstRecordByData("settings", "key", "weather").get("value")`. The value never appears in the package or in the spec.
 
-## Pagine
+## Pages
 
-- In `pb_public/`: un `index.html` e moduli ES (`<script type="module">`). Niente build e niente librerie esterne, salvo necessità reali scritte nella scheda.
-- **Logica pura in moduli separati**, senza DOM. `fetch` e `localStorage` si passano come parametri, così i test con `node --test` li sostituiscono con versioni finte. Il client in [template/pkg/pb_public/api.js](template/pkg/pb_public/api.js) è il punto di partenza.
-- API REST:
-  - elenco `GET /api/collections/<c>/records?filter=…&sort=-created&perPage=50`
-  - creazione `POST`, modifica `PATCH /records/<id>`, cancellazione `DELETE /records/<id>`
-  - accesso `POST /api/collections/users/auth-with-password` con `{identity, password}`, che restituisce `{token, record}`
-  - le chiamate successive mandano l'header `Authorization: <token>`
-- Il layout parte dal telefono (larghezza da 360px) e usa la lingua della scheda. Ogni stato ha il suo messaggio: caricamento, lista vuota, errore di rete, sessione scaduta, troppi tentativi (429).
+- In `pb_public/`: an `index.html` and ES modules (`<script type="module">`). No build and no external libraries, unless a real need is written in the spec.
+- **Pure logic in separate modules**, without the DOM. `fetch` and `localStorage` are passed in as parameters, so `node --test` tests can replace them with fakes. The client in [template/pkg/pb_public/api.js](template/pkg/pb_public/api.js) is the starting point; its user-facing `messages` are passed in the app's language.
+- REST API:
+  - list `GET /api/collections/<c>/records?filter=…&sort=-created&perPage=50`
+  - create `POST`, update `PATCH /records/<id>`, delete `DELETE /records/<id>`
+  - sign-in `POST /api/collections/users/auth-with-password` with `{identity, password}`, which returns `{token, record}`
+  - later calls send the `Authorization: <token>` header
+- The layout starts from the phone (360px wide) and uses the spec's language, also in `<html lang>`. Every state has its own message: loading, empty list, network error, session expired, too many attempts (429).
 
-## Aspetto
+## Look
 
-Tutti i colori stanno in variabili CSS su `:root`, come nel template: lo stile di un'app si cambia in un punto solo.
+All colours live in CSS variables on `:root`, as in the template: an app's style changes in one place.
 
-- **Stile aziendale**: i colori della scheda vanno in `--accent` (principale) e, se c'è, `--accent-2`. Il logo va in `pb_public/` e compare nell'intestazione. Il carattere aziendale si carica da un file in `pb_public/` (non da servizi esterni) oppure si usa quello di sistema. Se colori o logo sono "da raccogliere", usa lo stile neutro del template e segnalalo nella chiusura.
-- **Tema**: "segue il computer" vuol dire `@media (prefers-color-scheme: dark)`. L'interruttore aggiunge `data-theme="light|dark"` su `<html>`, che ha la precedenza sul sistema, e ricorda la scelta in `localStorage` (dentro un `try`). "Solo chiaro" o "solo scuro" vuol dire un solo insieme di variabili.
-- In entrambi i temi il testo deve restare leggibile sul colore aziendale: se il colore principale è chiaro, il testo sopra è scuro, e viceversa.
-- **`brand` nella configurazione di Citadel** (il file che indica `connect.py check`): quando c'è, è lo stile aziendale predefinito. Contiene `logo`, `favicon` e `font.file` (percorsi locali: copia i file in `pb_public/`), più due palette, `chiaro` e `scuro`, con le chiavi `bg`, `card`, `line`, `fg`, `muted`, `accent`, `on_accent`, `accent2`, `ok`, `warn`, `error`, `grafici` (i colori delle serie, in ordine) e `raggio_px`. Ogni chiave va nella variabile CSS dello stesso nome del template: `on_accent` diventa `--on-accent`, `accent2` diventa `--accent-2`. I colori `grafici` si usano nell'ordine dato.
+- **Company style**: the spec's colours go in `--accent` (primary) and, if present, `--accent-2`. The logo goes in `pb_public/` and appears in the header. The company font is loaded from a file in `pb_public/` (not from external services), or the system font is used. If colours or logo are "to collect", use the template's neutral style and say so in the closing message.
+- **Theme**: "follows the computer" means `@media (prefers-color-scheme: dark)`. The switch sets `data-theme="light|dark"` on `<html>`, which wins over the system, and remembers the choice in `localStorage` (inside a `try`). "Light only" or "dark only" means a single set of variables.
+- In both themes text must stay readable on the company colour: if the primary colour is light, the text on it is dark, and vice versa.
+- **`brand` in the Citadel configuration** (the file `connect.py check` points to): when present, it is the default company style. It holds `logo`, `favicon` and `font.file` (local paths: copy the files into `pb_public/`), plus two palettes, `light` and `dark`, with the keys `bg`, `card`, `line`, `fg`, `muted`, `accent`, `on_accent`, `accent2`, `ok`, `warn`, `error`, `charts` (the series colours, in order) and `radius_px`. Older configurations use Italian names for some keys: `chiaro` = `light`, `scuro` = `dark`, `grafici` = `charts`, `raggio_px` = `radius_px`; read them the same way. Each key goes into the template's CSS variable of the same name: `on_accent` becomes `--on-accent`, `accent2` becomes `--accent-2`. The `charts` colours are used in the given order.
 
-## Prova in locale
+## Local run
 
-Scarica PocketBase per il tuo sistema da https://github.com/pocketbase/pocketbase/releases (la stessa versione minore del manifest), poi:
+Download PocketBase for the user's system from https://github.com/pocketbase/pocketbase/releases (the same minor version as the manifest: `darwin_arm64` or `darwin_amd64` on Mac, `windows_amd64` on Windows), unzip it into the app folder (download it yourself with `curl` on Mac or `Invoke-WebRequest` on Windows: on Mac a binary downloaded from the browser is blocked by Gatekeeper), then run from there, on one line (Windows: `.\pocketbase.exe` in place of `./pocketbase`):
 
 ```sh
-pocketbase serve --http 127.0.0.1:8090 --dir /tmp/<nome>-pb \
-  --migrationsDir <nome>/pkg/pb_migrations --hooksDir <nome>/pkg/pb_hooks --publicDir <nome>/pkg/pb_public
-pocketbase superuser upsert <email> <password> --dir /tmp/<nome>-pb   # per entrare in /_/ e creare utenti di prova
+./pocketbase serve --http 127.0.0.1:8090 --dir .pb-data --migrationsDir pkg/pb_migrations --hooksDir pkg/pb_hooks --publicDir pkg/pb_public
+./pocketbase superuser upsert <email> <password> --dir .pb-data
 ```
 
-In locale l'uscita verso internet è libera. La prova dimostra che migrazioni, hook e pagine funzionano, non che gli host di `egress` saranno autorizzati.
+The second command creates the account to enter `/_/` and add test users. `.pb-data` holds only local test data: keep it and the binary out of `pkg/`, and add both to `.gitignore` if the folder is a git repo. The app opens at http://127.0.0.1:8090.
+
+Locally, outbound internet access is open. The run proves that migrations, hooks and pages work, not that the `egress` hosts will be authorised.
