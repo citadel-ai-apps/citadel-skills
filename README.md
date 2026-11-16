@@ -39,13 +39,13 @@ Apps created with earlier, Italian versions of the skills have `scheda.md` inste
 
 - **Claude Code, as a plugin** (read access to this repo is needed; in the Claude desktop app, type these in the Code tab):
   ```
-  /plugin marketplace add Manfrini/citadel-skills
+  /plugin marketplace add citadel-ai-apps/citadel-skills
   /plugin install citadel-skills@citadel-skills
   ```
   To get updates: `/plugin marketplace update citadel-skills`. Then start from `/citadel`.
 - **Codex, as a plugin** (same access to the repo):
   ```sh
-  codex plugin marketplace add Manfrini/citadel-skills
+  codex plugin marketplace add citadel-ai-apps/citadel-skills
   codex plugin add citadel-skills@citadel-skills
   ```
   To get updates: `codex plugin marketplace upgrade`. On Windows, type them in PowerShell.
