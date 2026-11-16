@@ -17,7 +17,7 @@ If they are missing, use `citadel-connect`. The **token is saved by the user**: 
 
 ## 2. Package and app
 
-- **Target app**: the spec's "Short name" (`<name>/spec.md`; in an older app, "Nome breve" in `<name>/scheda.md`). The operator creates it: if the API answers 404 on the app, tell the user and stop.
+- **Target app**: the spec's "Short name" (`<name>/spec.md`; in an older app, "Nome breve" in `<name>/scheda.md`). The operator creates it and gives the user a role on it. A 404 means the app does not exist or the user has no access to it, a 403 that their role cannot publish: tell the user what to ask the operator (the script's `hint`) and stop.
 - **Version**: increase `version` in `pbapp.json` over the last one published.
 - **Check**: `python3 <citadel-new-app folder>/check_package.py <name>/pkg` must answer `ok`.
 - **Seen locally**: the user has seen this version running on their computer (step 5 of `citadel-new-app`). If not, show it first.
@@ -36,6 +36,11 @@ Citadel's deploy follows this sequence: data snapshot, version swap, health chec
 
 A short message to the user:
 
-- **Succeeded**: the app's `address` and how people get in, according to the spec's Sign-in section. For example: "you create users from the `/_/` panel", or "just open the link".
+- **Succeeded**: the app's `address` and how people get in, according to the spec's Sign-in section. For example: "sign in to the Citadel portal, open the app's page, press *Open PocketBase admin* and create the users there", or "just open the link". Settings such as access keys are filled in the same way.
 - **Connections**: for each host in `grants`, authorised or pending. A pending host (Tier 2) must be approved by the operator in the portal, on the authorisations page; until then calls to that host fail and the app must show a clear message.
-- **Failed**: which step (`failed_step`), the reason in plain words, and that the previous version is still online. Then fix it with `citadel-new-app` starting from `error` and `log`, and publish again.
+- **Failed**, three cases:
+  - `rolled_back: true` (`failed_step` is `verify`): the new version did not start, or the health check or a `smoke` request failed. Citadel put the previous version back, code and data. Explain `error` in plain words, then fix it with `citadel-new-app` starting from `error` and `log`.
+  - `rolled_back: false` and no `failed_step`: Citadel refused the version before touching anything, for example the app's PocketBase version is outside the `pocketbase` range, or an `egress` host can never be granted. The previous version is still online.
+  - `ok: false` with `step` (`upload` or `deploy`), and often a `hint`: the package was refused on upload (the reason names the file), or the request itself was refused (access, app busy with an upgrade or frozen by an operator). Nothing changed online.
+
+  Then publish again.

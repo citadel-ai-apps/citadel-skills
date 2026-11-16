@@ -6,7 +6,7 @@ A tutorial for someone connecting this computer to Citadel for the first time. F
 
 ## Step 1 of 5: what you need
 
-The **token** is your personal key: Citadel uses it to know who is publishing. It is created by the **Citadel operator**, the person who installed Citadel in your company, and it expires (by default after 90 days). From the operator you need four things: the portal address, the apps domain, your token, the short name of your app.
+The **token** is your personal key: Citadel uses it to know who is publishing. It is created by the **Citadel operator**, the person who installed Citadel in your company, and it expires (by default after 90 days). From the operator you need four things: the portal address, the apps domain, your token, the short name of your app. A portal password is needed too, later, to manage the app's users once it is online.
 
 If the user does not have them yet, give them this message to send to the operator, translated into their language:
 
@@ -16,20 +16,22 @@ Hi, I'd like to build apps on Citadel. Could you send me:
 2. the apps domain
 3. a personal token for me
 4. the short name of my app (or create one called <app name>)
-Please send the token privately, not in a group chat. Thanks!
+5. a password to sign in to the portal
+Please send the token and the password privately, not in a group chat. Thanks!
 ```
 
 Then stop: the tutorial resumes when they have the four things. Never ask for the token in the chat.
 
-If the user is the operator, or the operator asks how, the commands run on the Citadel server and the token is printed only once:
+If the user is the operator, or the operator asks how, the commands run on the Citadel server with the `citadel` command, and the token is printed only once:
 
 ```
-sudo pbctl principal create person:<user> --name "<Full Name>"
-sudo pbctl tenant create --slug <app> --pb-version <version> --owner person:<user> --disk-mib 256
-sudo pbctl token create --principal person:<user> --name "<user> laptop" --days 90
+sudo citadel principal create person:<user> --name "<Full Name>"
+sudo citadel principal set-password person:<user> --password "<password>"
+sudo citadel tenant create --slug <app> --pb-version 0.42.2 --owner person:<user>
+sudo citadel token create --principal person:<user> --name "<user> laptop" --days 90
 ```
 
-The first two are needed only for a new person and a new app. Today the portal has no page where users create their own token.
+The first three are needed only for a new person and a new app. The password lets the user sign in to the portal, where the app's page has the button that opens its PocketBase admin (`/_/`): that is where they create the app's users and fill in its settings. The short name is at most 10 characters (lowercase letters, digits, hyphens); the PocketBase version must be one the platform offers. Today the portal has no page where users create their own token.
 
 ## Step 2 of 5: portal and apps domain
 
@@ -69,6 +71,6 @@ Run `connect.py check --tenant <short name>` yourself and translate the result:
 | `reachable`, `token_valid: true`, app exists | All set | Say so in one line and go back to where the user was |
 | portal `unreachable` | Citadel does not answer from here | Check the address; the company network or VPN may be needed |
 | `token_valid: false` | Citadel does not recognise the key | Mistyped or expired: repeat step 4, or ask the operator for a new one |
-| app does not exist | The app has not been created yet | Ask the operator to create it with that short name |
+| app `does not exist, or you have no access to it` | The app has not been created yet, or you are not on it | Ask the operator to create it with that short name, or to give you access |
 
 The step is done when all three are green.

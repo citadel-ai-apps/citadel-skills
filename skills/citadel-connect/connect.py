@@ -6,6 +6,7 @@
     python3 connect.py add-app <short name> [--global]
     python3 connect.py check [--tenant <short name>]
     python3 connect.py apps [--dir <working folder>]
+    python3 connect.py download <short name> --dir <app folder> [--release <id>]
 
 Where the configuration lives (file with mode 600, the token is never printed):
 - CITADEL_CONFIG, when set, wins over everything.
@@ -15,19 +16,28 @@ Where the configuration lives (file with mode 600, the token is never printed):
   folder, outside git) and adds .citadel/ to .gitignore. set-token and add-app
   write to the project file and stop if it is missing. With --global they use
   ~/.config/citadel/config.json.
+
+download fetches the package of the release online (or --release) and unpacks it
+into <app folder>/pkg. The spec and the tests are not part of a package.
 """
 import argparse
 import getpass
+import io
 import json
 import os
+import posixpath
 import sys
 import urllib.error
 import urllib.request
+import zipfile
 
 GLOBAL = os.path.expanduser("~/.config/citadel/config.json")
 LOCAL = os.path.join(".citadel", "config.json")
 SPEC_FILES = ("spec.md", "scheda.md")  # scheda.md: apps made by the earlier, Italian skills
 SHORT_NAME = ("- short name:", "- nome breve:")
+# Citadel answers 404 both for an app that does not exist and for one this token has no role on.
+NOT_FOUND = "does not exist, or you have no access to it: ask the operator"
+FORBIDDEN = "your role on this app cannot publish or download: ask the operator for the deployer role"
 
 
 def repo_root(start):
@@ -123,6 +133,81 @@ def get(c, path, token=True):
         return 0, str(getattr(e, "reason", e))
 
 
+def fetch(c, path):
+    """GET returning (status, raw bytes); 0 and the reason if Citadel does not answer."""
+    req = urllib.request.Request(c["url"].rstrip("/") + path)
+    req.add_header("Authorization", "Bearer " + c.get("token", ""))
+    try:
+        with urllib.request.urlopen(req, timeout=120) as r:
+            return r.status, r.read()
+    except urllib.error.HTTPError as e:
+        return e.code, e.read()
+    except (urllib.error.URLError, OSError) as e:
+        return 0, str(getattr(e, "reason", e)).encode()
+
+
+def explain(st, body):
+    """Plain words for a failed call; body is raw bytes, parsed JSON or a reason."""
+    if st == 404:
+        return NOT_FOUND
+    if st == 403:
+        return FORBIDDEN
+    if st == 401:
+        return "token not valid or expired: ask the operator for a new one"
+    if isinstance(body, bytes):
+        try:
+            body = json.loads(body)
+        except ValueError:
+            body = body.decode("utf-8", "replace")[:300]
+    if st == 0:
+        return f"Citadel unreachable: {body}"
+    msg = body.get("error") if isinstance(body, dict) else body
+    return f"error {st}: {msg or ''}".strip()
+
+
+def unpack(data, dest):
+    """Unpacks a package zip into dest, refusing what the upload would refuse."""
+    with zipfile.ZipFile(io.BytesIO(data)) as z:
+        for info in z.infolist():
+            name = info.filename
+            clean = posixpath.normpath(name)
+            if "\\" in name or name.startswith("/") or clean == ".." or clean.startswith("../"):
+                sys.exit(f"the package contains an unsafe path: {name!r}")
+        os.makedirs(dest)
+        for info in z.infolist():
+            if info.is_dir():
+                continue
+            target = os.path.join(dest, *posixpath.normpath(info.filename).split("/"))
+            os.makedirs(os.path.dirname(target), exist_ok=True)
+            with z.open(info) as src, open(target, "wb") as out:
+                out.write(src.read())
+
+
+def download(c, slug, folder, release=None):
+    dest = os.path.join(folder, "pkg")
+    if os.path.exists(dest):
+        sys.exit(f"{dest} already exists: download into a new folder")
+    st, body = get(c, f"/api/v1/tenants/{slug}/releases")
+    if st != 200:
+        sys.exit(explain(st, body))
+    rid = release or body.get("current")
+    if not rid:
+        sys.exit("no version published for this app yet")
+    rel = next((r for r in body.get("releases") or [] if r.get("id") == rid), None)
+    if rel is None:
+        sys.exit(f"release {rid} not found for {slug}")
+    st, data = fetch(c, f"/api/v1/tenants/{slug}/releases/{rid}/download")
+    if st != 200:
+        sys.exit(explain(st, data))
+    unpack(data, dest)
+    try:
+        version = json.loads(rel.get("manifest") or "{}").get("version")
+    except ValueError:
+        version = None
+    return {"folder": os.path.abspath(folder), "pkg": os.path.abspath(dest), "release": rid,
+            "version": version, "current": rid == body.get("current")}
+
+
 def local_apps(root):
     """App folders under root: they contain pkg/pbapp.json. The short name comes from the spec.
 
@@ -155,7 +240,7 @@ def local_apps(root):
 def live(c, slug):
     st, body = get(c, f"/api/v1/tenants/{slug}/releases")
     if st != 200:
-        return {"online": "does not exist" if st == 404 else f"error {st}"}
+        return {"online": NOT_FOUND if st == 404 else FORBIDDEN if st == 403 else f"error {st}"}
     cur = next((r for r in body.get("releases") or [] if r.get("id") == body.get("current")), None)
     if not cur:
         return {"online": "no version published"}
@@ -187,6 +272,10 @@ def main():
     k.add_argument("--tenant")
     l = sub.add_parser("apps")
     l.add_argument("--dir", default=".")
+    d = sub.add_parser("download")
+    d.add_argument("slug")
+    d.add_argument("--dir", required=True, help="the app folder: the package goes into <dir>/pkg")
+    d.add_argument("--release", help="a release id; default: the one online")
     args = ap.parse_args()
     writing = args.cmd in ("init", "set-token", "add-app")
     path, scope = config_path(write=writing, use_global=getattr(args, "use_global", False),
@@ -213,6 +302,11 @@ def main():
     elif args.cmd == "add-app":
         c["apps"] = sorted(set(c.get("apps", [])) | {args.slug})
         save(path, c)
+    elif args.cmd == "download":
+        if not (c.get("url") and c.get("token")):
+            sys.exit("portal address or token missing: run citadel-connect first")
+        print(json.dumps(download(c, args.slug, args.dir, args.release), ensure_ascii=False, indent=2))
+        return 0
     elif args.cmd == "apps":
         apps = local_apps(args.dir)
         for slug in c.get("apps", []):
@@ -239,7 +333,8 @@ def main():
                 elif st == 401:
                     out["token_valid"] = False
                 elif st == 404:
-                    out["app_" + app] = "does not exist: ask the operator to create it"
+                    out["token_valid"] = True
+                    out["app_" + app] = NOT_FOUND
                 else:
                     out["error"] = f"{st}: {body}"
         print(json.dumps(out, ensure_ascii=False, indent=2))

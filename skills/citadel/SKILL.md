@@ -69,5 +69,5 @@ Use `citadel-publish`. Close with the app's address, how people get in, and any 
 ## Who does what
 
 - **The user** describes the app, tries it, publishes it and changes it.
-- **The Citadel operator** creates new apps, hands out tokens and approves the connections that are not automatic: a service given with a wildcard, sending email, a custom address.
+- **The Citadel operator** creates new apps, hands out tokens and portal passwords, and approves the connections that are not automatic, such as a service given with a wildcard. Sending email and custom addresses are not available on Citadel today.
 - **Citadel** records every publication and every authorisation. If a publication fails, it puts the previous version back online by itself.

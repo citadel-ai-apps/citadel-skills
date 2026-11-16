@@ -17,7 +17,12 @@ description: Changes an app that already exists on Citadel. Shows the available 
 
 `python3 <citadel-connect folder>/connect.py apps --dir <working folder>` lists the known apps: local folder, local version, online version. Show them to the user one per line and ask which one to change. If the configuration is missing, use `citadel-connect` first.
 
-To change an app you need its **working folder**, with `spec.md` (or `scheda.md` in an older app) and `pkg/`. Citadel does not give back the code of a published app. If the folder is not there, tell the user and stop: the code has to be recovered from where it was saved, for example a git repository.
+To change an app you need its **working folder**, with `spec.md` (or `scheda.md` in an older app) and `pkg/`. If the folder is not there (`folder` is empty in the list):
+
+1. Download the package online: `python3 <citadel-connect folder>/connect.py download <short name> --dir <working folder>/<short name>`. It needs the deployer role; if Citadel refuses, the user asks the operator.
+2. The package has the code only. Rebuild `spec.md` from it, following [spec-template.md](../citadel-interview/spec-template.md): migrations → Data table and rules, `egress` and hooks → Connections, pages → Interface, Look and `Language`. What the code cannot tell (who uses it, why) goes under "To decide".
+3. Show the user the "For the requester" summary, as at the end of the interview, and fix it until they confirm it.
+4. Copy `test/` from the `citadel-new-app` template and add tests for the logic in `pb_public/`.
 
 If the local version differs from the online one, ask which of the two is the good one before going on.
 
@@ -30,7 +35,7 @@ Read the spec, then ask "What would you like to change?". Ask at most three ques
 | Look and text | colours, wording, field order | `pb_public/` only |
 | New information | an extra field, a new kind of entry | a **new migration** |
 | Who sees or changes what | a manager, shared entries | rules in a new migration |
-| Connections | an external service, sending email | hook plus `egress`; Tier 2 waits for an approver |
+| Connections | an external service | hook plus `egress`; a wildcard waits for an approver. Email is not available on Citadel today |
 | Information to remove | a field no longer needed | new migration; **that field's data is lost** |
 
 ## 3. Summary

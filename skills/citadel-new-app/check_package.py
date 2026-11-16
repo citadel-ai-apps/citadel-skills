@@ -3,7 +3,7 @@
 
     python3 check_package.py <pkg folder>
 
-Prints `ok`, or one error per line and then exits with 1.
+Prints `ok`, or one error per line and then exits with 1. Warnings go to stderr.
 """
 import ipaddress
 import json
@@ -15,9 +15,21 @@ import sys
 MAX_BYTES = 50 << 20
 MAX_FILES = 2000
 TOP = {"pbapp.json", "pb_hooks", "pb_migrations", "pb_public"}
-METHODS = {"GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"}
+METHODS = {"GET", "HEAD", "POST", "PUT", "PATCH", "DELETE"}
 LABEL = re.compile(r"^(?!-)[a-z0-9-]{1,63}(?<!-)$")
-VERSION = re.compile(r"^\d+\.(\d+|x)(\.(\d+|x))?$")
+VERSION = re.compile(r"^\d+\.(\d+|x|\*)(\.(\d+|x|\*))?$")
+# Runtimes the platform builds (images/pb-hardened/versions.txt in the Citadel repo).
+# 0.22.55 is there too, but it has a different JS API and these skills do not use it.
+PLATFORM_PB = ("0.38.2", "0.40.4", "0.41.1", "0.42.2")
+# Top-level names that never resolve publicly: the server refuses them.
+RESERVED_TLDS = {"internal", "local", "localdomain", "localhost", "home", "lan", "corp",
+                 "intranet", "test", "example", "invalid", "onion"}
+# A few public suffixes where anyone gets a name. The server checks the full Public
+# Suffix List; this short list only catches the common mistakes locally.
+PUBLIC_SUFFIXES = {"github.io", "gitlab.io", "herokuapp.com", "netlify.app", "vercel.app",
+                   "pages.dev", "workers.dev", "azurewebsites.net", "cloudfront.net",
+                   "appspot.com", "web.app", "firebaseapp.com", "blogspot.com"}
+SECOND_LEVEL = {"co", "com", "org", "net", "gov", "edu", "ac", "ne", "or", "go"}
 
 
 def check_tree(root, errors):
@@ -48,24 +60,48 @@ def check_tree(root, errors):
         errors.append(f"{total} bytes: the maximum is {MAX_BYTES}")
 
 
-def check_host(h):
+def public_suffix(bare):
+    """Roughly: is bare a suffix under which strangers register names?"""
+    labels = bare.split(".")
+    if bare in PUBLIC_SUFFIXES or len(labels) < 2:
+        return True
+    # co.uk, com.au, ac.jp…: a generic second level under a two-letter country code.
+    return len(labels) == 2 and len(labels[1]) == 2 and labels[0] in SECOND_LEVEL
+
+
+def check_host(h, apps_domain=None):
     if not isinstance(h, str) or not h:
         return "must be a host name"
+    if h != h.lower():
+        return "must be lowercase"
+    if any(c in h for c in "/:@ \t"):
+        return "a host name only, not a URL, port or user@host"
+    if len(h) > 253:
+        return "longer than 253 characters"
+    wild = h.startswith("*.")
+    bare = h[2:] if wild else h
+    if "*" in bare:
+        return "only the leftmost label may be a wildcard, as *.example.com"
     try:
-        ipaddress.ip_address(h.strip("[]"))
+        ipaddress.ip_address(bare.strip("[]"))
         return "IP address, host names are required"
     except ValueError:
         pass
-    labels = h.lower().split(".")
-    wild = labels[0] == "*"
-    if wild:
-        labels = labels[1:]
-        if len(labels) < 2:
-            return "wildcard on a top-level domain, not allowed"
-    if len(labels) < 2 or not all(LABEL.match(l) for l in labels):
+    labels = bare.split(".")
+    if labels[-1].isdigit():
+        return "IP address in shorthand form, host names are required"
+    if len(labels) < 2:
+        return "wildcard on a top-level domain, not allowed" if wild else "not a fully qualified host name"
+    if not all(LABEL.match(l) for l in labels):
         return "not a valid host name"
-    if labels[-1] in ("localhost", "local", "internal", "lan", "home"):
-        return "internal network name, not reachable"
+    if wild and public_suffix(bare):
+        return "wildcard on a public suffix, where anyone can register names"
+    if apps_domain:
+        d = apps_domain.rpartition("://")[2].strip(".").lower()
+        if d and (bare == d or bare.endswith("." + d)):
+            return "Citadel's own apps domain, not reachable from an app"
+    if labels[-1] in RESERVED_TLDS:
+        return "reserved name that never resolves on the internet"
     return None
 
 
@@ -74,11 +110,57 @@ def check_request(where, method, path, expect, errors):
         errors.append(f"pbapp.json {where}: invalid method {method!r}")
     if not isinstance(path, str) or not path.startswith("/"):
         errors.append(f"pbapp.json {where}: path must start with /")
+    elif ".." in path:
+        errors.append(f"pbapp.json {where}: path must not contain ..")
     if not isinstance(expect, int) or not 100 <= expect <= 599:
         errors.append(f"pbapp.json {where}: expectStatus must be an HTTP status code")
 
 
-def check_manifest(root, errors):
+def parse_version(v):
+    """(major, minor, patch) with None for a wildcard part; None if not a version."""
+    if not isinstance(v, str) or not VERSION.match(v):
+        return None
+    parts = [None if p in ("x", "*") else int(p) for p in v.split(".")]
+    if len(parts) == 2:
+        parts.append(None)
+    if parts[1] is None:
+        parts[2] = None
+    return tuple(parts)
+
+
+def low(v):
+    return tuple(0 if p is None else p for p in v)
+
+
+def high(v):
+    return tuple(1 << 30 if p is None else p for p in v)
+
+
+def check_range(pb, errors, warnings):
+    lo, hi = pb.get("min"), pb.get("max")
+    parsed = {}
+    for k, v in (("min", lo), ("max", hi)):
+        if v is None or v == "":
+            continue  # an absent bound is open, as on the server
+        parsed[k] = parse_version(v)
+        if parsed[k] is None:
+            errors.append(f"pbapp.json: pocketbase.{k} {v!r} is not a version (e.g. 0.42.x)")
+    if None in parsed.values():
+        return
+    if "min" in parsed and "max" in parsed and low(parsed["min"]) > high(parsed["max"]):
+        errors.append(f"pbapp.json: pocketbase.min {lo} is above max {hi}")
+        return
+    ok = [r for r in PLATFORM_PB
+          if ("min" not in parsed or low(parse_version(r)) >= low(parsed["min"]))
+          and ("max" not in parsed or low(parse_version(r)) <= high(parsed["max"]))]
+    if not ok:
+        errors.append(f"pbapp.json: pocketbase range matches none of the platform's versions ({', '.join(PLATFORM_PB)})")
+    elif ok[-1] != PLATFORM_PB[-1]:
+        warnings.append(f"pbapp.json: pocketbase.max excludes {PLATFORM_PB[-1]}: an app created on it, "
+                        "or upgraded to it, will refuse this package")
+
+
+def check_manifest(root, errors, warnings, apps_domain=None):
     p = os.path.join(root, "pbapp.json")
     if not os.path.isfile(p):
         errors.append("pbapp.json: missing")
@@ -94,11 +176,9 @@ def check_manifest(root, errors):
         v = m.get(k)
         if not isinstance(v, str) or not v.strip() or len(v) > 64:
             errors.append(f"pbapp.json: {k} is required, at most 64 characters")
-    pb = m.get("pocketbase") or {}
-    for k in ("min", "max"):
-        v = pb.get(k)
-        if v is not None and not (isinstance(v, str) and VERSION.match(v) and not v.startswith("x")):
-            errors.append(f"pbapp.json: pocketbase.{k} {v!r} is not a version (e.g. 0.40.x)")
+        elif not v.isprintable():
+            errors.append(f"pbapp.json: {k} contains a non-printable character")
+    check_range(m.get("pocketbase") or {}, errors, warnings)
     eg = m.get("egress") or []
     if not isinstance(eg, list):
         errors.append("pbapp.json: egress must be a list")
@@ -106,7 +186,7 @@ def check_manifest(root, errors):
     if len(set(eg)) != len(eg):
         errors.append("pbapp.json: egress has duplicates")
     for h in eg:
-        why = check_host(h)
+        why = check_host(h, apps_domain)
         if why:
             errors.append(f"pbapp.json egress {h!r}: {why}")
     hc = m.get("healthcheck") or {}
@@ -115,14 +195,38 @@ def check_manifest(root, errors):
         check_request(f"smoke[{i}]", str(s.get("method", "GET")).upper(), s.get("path"), s.get("expectStatus", 200), errors)
 
 
+def apps_domain_for(start):
+    """apps_domain from the citadel-connect configuration, if any (same lookup as publish.py)."""
+    if os.environ.get("CITADEL_APPS_DOMAIN"):
+        return os.environ["CITADEL_APPS_DOMAIN"]
+    path = os.environ.get("CITADEL_CONFIG")
+    if not path:
+        d = os.path.abspath(start)
+        path = os.path.expanduser("~/.config/citadel/config.json")
+        while True:
+            p = os.path.join(d, ".citadel", "config.json")
+            if os.path.isfile(p):
+                path = p
+                break
+            if os.path.exists(os.path.join(d, ".git")) or os.path.dirname(d) == d:
+                break
+            d = os.path.dirname(d)
+    try:
+        return json.load(open(path, encoding="utf-8")).get("apps_domain")
+    except (OSError, ValueError):
+        return None
+
+
 def main():
     if len(sys.argv) != 2 or not os.path.isdir(sys.argv[1]):
         print(__doc__.strip())
         return 2
-    errors = []
+    errors, warnings = [], []
     check_tree(sys.argv[1], errors)
-    check_manifest(sys.argv[1], errors)
+    check_manifest(sys.argv[1], errors, warnings, apps_domain_for(sys.argv[1]))
     print("\n".join(errors) if errors else "ok")
+    for w in warnings:
+        print("warning: " + w, file=sys.stderr)
     return 1 if errors else 0
 
 

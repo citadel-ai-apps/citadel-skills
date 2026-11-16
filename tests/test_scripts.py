@@ -55,6 +55,108 @@ class Check(unittest.TestCase):
         self.assertIn("pbapp.json: missing", r.stdout)
         self.assertIn("not allowed", r.stdout)
 
+def package(manifest):
+    d = tempfile.mkdtemp()
+    base = {"schemaVersion": 1, "name": "x", "version": "1.0.0", "pocketbase": {"min": "0.38.0", "max": "0.42.x"}}
+    base.update(manifest)
+    json.dump(base, open(os.path.join(d, "pbapp.json"), "w"))
+    return d
+
+class CheckServerRules(unittest.TestCase):
+    """check_package.py must refuse what Citadel's pkgvalidate refuses."""
+    def errors(self, manifest, env=None):
+        r = run(CHECK, package(manifest), env=dict({"CITADEL_CONFIG": os.devnull}, **(env or {})))
+        return r.returncode, r.stdout, r.stderr
+    def assertRefused(self, manifest, text, env=None):
+        code, out, _ = self.errors(manifest, env)
+        self.assertEqual(code, 1, out)
+        self.assertIn(text, out)
+    def test_good_manifest(self):
+        code, out, err = self.errors({"egress": ["api.example.com", "*.example.co.uk"]})
+        self.assertEqual((code, out.strip(), err), (0, "ok", ""))
+    def test_options_is_not_a_smoke_method(self):
+        self.assertRefused({"smoke": [{"method": "OPTIONS", "path": "/"}]}, "invalid method")
+    def test_dotdot_in_path(self):
+        self.assertRefused({"smoke": [{"path": "/a/../b"}]}, "..")
+    def test_uppercase_host(self):
+        self.assertRefused({"egress": ["API.Example.com"]}, "lowercase")
+    def test_wildcard_public_suffix(self):
+        self.assertRefused({"egress": ["*.co.uk"]}, "public suffix")
+        self.assertRefused({"egress": ["*.github.io"]}, "public suffix")
+    def test_reserved_tld(self):
+        self.assertRefused({"egress": ["erp.corp"]}, "reserved")
+    def test_ip_shorthand(self):
+        self.assertRefused({"egress": ["10.1"]}, "IP address")
+    def test_url_not_host(self):
+        self.assertRefused({"egress": ["https://api.example.com"]}, "not a URL")
+    def test_apps_domain(self):
+        self.assertRefused({"egress": ["other.apps.company.com"]}, "apps domain",
+                           env={"CITADEL_APPS_DOMAIN": "https://apps.company.com"})
+    def test_range(self):
+        self.assertRefused({"pocketbase": {"min": "0.41.0", "max": "0.40.x"}}, "above max")
+        self.assertRefused({"pocketbase": {"min": "0.19.0", "max": "0.19.x"}}, "none of the platform")
+        code, _, err = self.errors({"pocketbase": {"min": "0.38.0", "max": "0.41.x"}})
+        self.assertEqual(code, 0)
+        self.assertIn("0.42.2", err)
+    def test_open_bounds(self):
+        code, out, _ = self.errors({"pocketbase": {"min": "", "max": "0.*"}})
+        self.assertEqual((code, out.strip()), (0, "ok"))
+
+class Download(unittest.TestCase):
+    """connect.py download against a stub of the Citadel API."""
+    def serve(self, entries, status=200):
+        import http.server, io, threading, zipfile
+        buf = io.BytesIO()
+        with zipfile.ZipFile(buf, "w") as z:
+            for name, data in entries.items():
+                z.writestr(name, data)
+        zipped = buf.getvalue()
+        class H(http.server.BaseHTTPRequestHandler):
+            def log_message(self, *a): pass
+            def do_GET(self):
+                if self.headers.get("Authorization") != "Bearer t":
+                    self.send_response(401); self.end_headers(); return
+                if self.path == "/api/v1/tenants/app/releases":
+                    body = json.dumps({"current": "r2", "releases": [
+                        {"id": "r2", "manifest": json.dumps({"version": "1.2.0"})}, {"id": "r1", "manifest": "{}"}]}).encode()
+                    self.send_response(200); self.end_headers(); self.wfile.write(body)
+                elif self.path == "/api/v1/tenants/app/releases/r2/download":
+                    self.send_response(status); self.end_headers()
+                    self.wfile.write(zipped if status == 200 else b'{"error":"x"}')
+                else:
+                    self.send_response(404); self.end_headers(); self.wfile.write(b'{"error":"tenant not found"}')
+        srv = http.server.HTTPServer(("127.0.0.1", 0), H)
+        threading.Thread(target=srv.serve_forever, daemon=True).start()
+        self.addCleanup(srv.shutdown)
+        cfg = os.path.join(tempfile.mkdtemp(), "cfg.json")
+        json.dump({"url": f"http://127.0.0.1:{srv.server_port}", "token": "t"}, open(cfg, "w"))
+        return {"CITADEL_CONFIG": cfg}
+    def test_unpacks_current_release(self):
+        env = self.serve({"pbapp.json": '{"version":"1.2.0"}', "pb_public/index.html": "<p>hi</p>"})
+        d = os.path.join(tempfile.mkdtemp(), "app")
+        r = run(CONNECT, "download", "app", "--dir", d, env=env)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        out = json.loads(r.stdout)
+        self.assertEqual((out["release"], out["version"], out["current"]), ("r2", "1.2.0", True))
+        self.assertTrue(os.path.isfile(os.path.join(d, "pkg", "pb_public", "index.html")))
+        r = run(CONNECT, "download", "app", "--dir", d, env=env)
+        self.assertNotEqual(r.returncode, 0)
+        self.assertIn("already exists", r.stderr)
+    def test_refuses_traversal(self):
+        env = self.serve({"../evil.js": "x"})
+        d = os.path.join(tempfile.mkdtemp(), "app")
+        r = run(CONNECT, "download", "app", "--dir", d, env=env)
+        self.assertNotEqual(r.returncode, 0)
+        self.assertIn("unsafe path", r.stderr)
+        self.assertFalse(os.path.exists(os.path.join(d, "pkg")))
+    def test_unknown_app_and_forbidden(self):
+        env = self.serve({})
+        r = run(CONNECT, "download", "other", "--dir", os.path.join(tempfile.mkdtemp(), "a"), env=env)
+        self.assertIn("no access", r.stderr)
+        env = self.serve({}, status=403)
+        r = run(CONNECT, "download", "app", "--dir", os.path.join(tempfile.mkdtemp(), "a"), env=env)
+        self.assertIn("deployer", r.stderr)
+
 ITALIAN = re.compile(r"\b(della|degli|delle|perché|quando|anche|questo|questa|chiedi|scheda|utente|pacchetto|collegamenti)\b", re.I)
 LEGACY_OK = re.compile(r"scheda\.md|Nome breve|Dati toccati|Per chi la costruisce|Modifiche|chiaro|scuro|grafici|raggio_px|Email o password non corretti")
 

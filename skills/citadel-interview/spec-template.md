@@ -6,10 +6,10 @@ The spec has two halves. **For the requester** holds the confirmed summary in th
 
 **Sign-in**
 - Just open the link and browse: `list`/`view` rules open (`""`), `create`/`update`/`delete` closed (`null`).
-- Just open the link and fill in a form: `createRule: ""` on the answers collection, reading closed. The owner reads the answers from the `/_/` panel.
-- By invitation: `users.createRule = null`. The owner creates users from the `/_/` panel.
-- Open sign-up: `users.createRule = ""`. Verifying the email needs an SMTP relay (`smtp_relay`, Tier 2).
-- Company account (Google, Microsoft…): `oauth_provider` grant, Tier 2.
+- Just open the link and fill in a form: `createRule: ""` on the answers collection, reading closed. The owner reads the answers from the `/_/` panel, which they open from the app's page in the Citadel portal.
+- By invitation: `users.createRule = null`. The owner creates users from the `/_/` panel (opened from the portal) and gives each person their password.
+- Open sign-up: `users.createRule = ""`. Citadel cannot send email today, so there is no email verification and no password reset by email: note it under "To decide".
+- Company account (Google, Microsoft…): the provider's sign-in hosts go in `egress` (Tier 1 when precise). The `oauth_provider` grant is recorded but Citadel does not enforce it yet; the provider must be configured in `/_/`. Note it under "To decide" with who administers the provider.
 - Whenever there are users: behind Citadel's edge, set `trustedProxy` (`X-Forwarded-For`, right-most IP) and the rate limits.
 
 **What each person sees, who changes what**
@@ -25,10 +25,12 @@ The spec has two halves. **For the requester** holds the confirmed summary in th
 |---|---|---|
 | Public service at one precise address | `egress_host` (FQDN in `pbapp.json` → `egress`) | 1, automatic |
 | Several addresses under a wildcard (`*.example.com`) | `egress_host` | 2, needs an approver |
-| Sending email | `smtp_relay` | 2 |
-| External file storage | `object_storage` | 2 |
-| Custom address (`app.company.com`) | `custom_domain` | 2 |
+| Sending email | `smtp_relay`: not available today | to decide |
+| External file storage | `object_storage`: not available today | to decide |
+| Custom address (`app.company.com`) | `custom_domain`: not available today | to decide |
 | Internal system on a private network | none today: private networks are Tier 0 | to decide |
+
+"Not available today": Citadel records these grants but nothing provides them yet (PocketBase's mailer, for example, is blocked from reaching a mail server). Put the need under "To decide" and design the first version without it: show the information on screen instead of emailing it, keep files in `file` fields.
 
 For a service that needs a key, note under "To decide" where to keep it. Citadel does not pass environment variables to the tenant.
 
@@ -82,7 +84,7 @@ Headings and field names stay in English. The "For the requester" section is wri
 - <open point> — <proposal, if any>
 ```
 
-"Information to collect" holds everything needed to build that the interview did not gather. Each connection needs an address, documentation, access type and a contact person. Email needs the sender address and the relay. Company style needs the logo (SVG or PNG) and the colours: who has them, or a company website to take them from. Company sign-in needs the provider and who administers it. Keys are noted only as "who provides it": their value never goes into the spec.
+"Information to collect" holds everything needed to build that the interview did not gather. Each connection needs an address, documentation, access type and a contact person. Company style needs the logo (SVG or PNG) and the colours: who has them, or a company website to take them from. Company sign-in needs the provider and who administers it. Keys are noted only as "who provides it": their value never goes into the spec.
 
 ## Older specs
 

@@ -26,7 +26,8 @@ From their company's Citadel operator the user receives:
 - the **portal address**, for example `https://citadel.company.com`;
 - the **apps domain**, for example `apps.company.com` (in development it may include the scheme: `http://apps.localhost`);
 - a **personal token**;
-- the **short name** of each app they can work on. New apps are created by the operator.
+- the **short name** of each app they can work on. New apps are created by the operator;
+- a **portal password**, to open each app's PocketBase admin (`/_/`) from the portal.
 
 ## 2. Configuration
 
@@ -65,7 +66,7 @@ Before writing, sum up in one line (where it applies, portal, domain, apps) and 
 The step is done when the portal is `reachable`, `token_valid` is `true` and every app exists. Otherwise go back to the questions only for the value that is wrong:
 - portal unreachable: the address is wrong, or the company network or VPN is needed;
 - token not valid: a new token has to be requested from the operator;
-- app does not exist: ask the operator to create it.
+- app "does not exist, or you have no access to it": Citadel answers the same way in both cases. Ask the operator to create it, or to give your account a role on it (deployer, admin or owner to publish).
 
 ## 4. My apps
 
@@ -74,3 +75,7 @@ Citadel does not yet have a call that lists a user's apps. The known apps are th
 - the working folders that contain `spec.md` (or `scheda.md`, for apps made with earlier versions of the skills) and `pkg/`.
 
 `connect.py apps` shows them together: short name, local folder (if any), online release.
+
+## 5. Getting an app's package back
+
+`python3 connect.py download <short name> --dir <app folder>` downloads the package of the version online and unpacks it into `<app folder>/pkg` (`--release <id>` for another version). It needs the deployer role or above. The package holds the code only: the spec and the tests are not in it, `citadel-edit-app` rebuilds them.

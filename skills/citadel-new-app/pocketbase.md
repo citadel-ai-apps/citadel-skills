@@ -1,6 +1,6 @@
 # PocketBase on Citadel
 
-JS API of PocketBase 0.23 and later (the versions Citadel offers for these apps are 0.38, 0.40 and 0.41). Official docs: https://pocketbase.io/docs/js-overview/
+JS API of PocketBase 0.23 and later (the versions Citadel offers for these apps are 0.38, 0.40, 0.41 and 0.42). Official docs: https://pocketbase.io/docs/js-overview/
 
 Collection names, field names and identifiers are in English. Text the app's users read is in the spec's `Language`.
 
@@ -116,7 +116,7 @@ routerAdd("GET", "/api/weather", (e) => {
 
 ### Access keys
 
-Citadel does not pass environment variables to the app. Keys go in a `settings` collection (`key`, `value`) with every rule set to `null`. The owner fills it in from the `/_/` panel, and the hook reads it with `$app.findFirstRecordByData("settings", "key", "weather").get("value")`. The value never appears in the package or in the spec.
+Citadel does not pass environment variables to the app. Keys go in a `settings` collection (`key`, `value`) with every rule set to `null`. The owner fills it in from the `/_/` panel (on Citadel, opened from the app's page in the portal), and the hook reads it with `$app.findFirstRecordByData("settings", "key", "weather").get("value")`. The value never appears in the package or in the spec.
 
 ## Pages
 
@@ -147,6 +147,6 @@ Download PocketBase for the user's system from https://github.com/pocketbase/poc
 ./pocketbase superuser upsert <email> <password> --dir .pb-data
 ```
 
-The second command creates the account to enter `/_/` and add test users. `.pb-data` holds only local test data: keep it and the binary out of `pkg/`, and add both to `.gitignore` if the folder is a git repo. The app opens at http://127.0.0.1:8090.
+The second command creates the account to enter `/_/` and add test users. This is for the local run only: on Citadel the owner enters `/_/` from the portal, without a password. `.pb-data` holds only local test data: keep it and the binary out of `pkg/`, and add both to `.gitignore` if the folder is a git repo. The app opens at http://127.0.0.1:8090.
 
 Locally, outbound internet access is open. The run proves that migrations, hooks and pages work, not that the `egress` hosts will be authorised.

@@ -122,9 +122,20 @@ def multipart(field, filename, data):
     return head + data + f"\r\n--{b}--\r\n".encode(), f"multipart/form-data; boundary={b}"
 
 
+HINTS = {
+    401: "token not valid or expired: ask the operator for a new one",
+    403: "your role on this app cannot publish: ask the operator for the deployer role",
+    404: "the app does not exist, or this token has no access to it: ask the operator",
+    409: "the app is busy or frozen (an upgrade or another deploy is running, or an operator froze it)",
+}
+
+
 def fail(step, status, body):
     msg = body.get("error") if isinstance(body, dict) else body
-    print(json.dumps({"ok": False, "step": step, "http_status": status, "error": msg}, ensure_ascii=False, indent=2))
+    out = {"ok": False, "step": step, "http_status": status, "error": msg}
+    if status in HINTS:
+        out["hint"] = HINTS[status]
+    print(json.dumps(out, ensure_ascii=False, indent=2))
     sys.exit(1)
 
 
@@ -155,6 +166,9 @@ def main():
     _, eg = call(c, "GET", f"/api/v1/tenants/{t}/egress")
     entries = eg.get("hosts", eg.get("entries", eg)) if isinstance(eg, dict) else eg
 
+    # 200: deployed. 422 with failed_step: it failed after the swap and Citadel rolled
+    # back code and data. 422 without it: refused before anything changed (runtime
+    # outside the pocketbase range, a host that can never be granted).
     out = {
         "ok": bool(dep.get("deployed")),
         "version": manifest.get("version"),
