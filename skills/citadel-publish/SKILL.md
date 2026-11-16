@@ -20,6 +20,7 @@ If they are missing, use `citadel-connect`. The **token is saved by the user**: 
 - **Target app**: the spec's "Short name" (`<name>/spec.md`; in an older app, "Nome breve" in `<name>/scheda.md`). The operator creates it: if the API answers 404 on the app, tell the user and stop.
 - **Version**: increase `version` in `pbapp.json` over the last one published.
 - **Check**: `python3 <citadel-new-app folder>/check_package.py <name>/pkg` must answer `ok`.
+- **Seen locally**: the user has seen this version running on their computer (step 5 of `citadel-new-app`). If not, show it first.
 
 ## 3. Publication
 

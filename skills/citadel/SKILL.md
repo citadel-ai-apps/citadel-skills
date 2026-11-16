@@ -54,7 +54,7 @@ Use `citadel-new-app`. The user confirms the plan; you build and run the checks.
 
 ### Step 6 of 7: try it
 
-Start the app locally (`citadel-new-app`, local run) and give the user the address to open in the browser, as a link. Ask "Does it do what you expected?". Changes go back to step 5 and are tried again. Done when the user says yes.
+`citadel-new-app` ends by starting the app on the user's computer (its step 5, "Show it"): the user opens the link, tries it, asks for changes. Done when the user says it does what they expected. Nothing is published before.
 
 ### Step 7 of 7: publish
 

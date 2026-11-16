@@ -53,7 +53,7 @@ Ask for confirmation. If data is lost, an explicit yes on that point is needed.
 ## 4. Build
 
 1. Update the spec: the sections touched, plus a line under `## Changes` (create the section if missing) with date and version. In an older `scheda.md`, keep its Italian headings and add the section as `## Modifiche`.
-2. Apply the change following steps 3 and 4 of `citadel-new-app`, with the same checks. Two extra rules apply: migrations already published stay as they are, and the existing tests must stay green.
+2. Apply the change following steps 3, 4 and 5 of `citadel-new-app`, with the same checks: the user sees the changed app running locally and says yes before it is republished. Two extra rules apply: migrations already published stay as they are, and the existing tests must stay green.
 3. Increase `version` in `pbapp.json`: the third number for look and fixes (1.2.0 → 1.2.1), the second for everything else (1.2.1 → 1.3.0).
 
 ## 5. Publication

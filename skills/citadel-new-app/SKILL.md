@@ -55,14 +55,24 @@ The step is done when all three checks pass:
 
 1. `node --test '<name>/test/*.test.mjs'` is green.
 2. `python3 <this skill's folder>/check_package.py <name>/pkg` answers `ok`.
-3. **Local run**, if `pocketbase` is installed: start it on the package (command in [pocketbase.md](pocketbase.md#local-run)). Every `smoke` request in the manifest must answer with its `expectStatus`. If `pocketbase` is not there, ask the user whether to download it; if they say no, mark the run as not done.
+3. **Local run**: start PocketBase on the package (download and command in [pocketbase.md](pocketbase.md#local-run); if it is missing, download it yourself). Every `smoke` request in the manifest must answer with its `expectStatus`.
 
 Fix and repeat until they pass.
 
-## 5. Closing
+## 5. Show it
+
+Every build ends with the user seeing the app running on their computer, before anything is published. Leave the local run started and give the user:
+
+- the address as a link, http://127.0.0.1:8090;
+- if the app has sign-in, a test account you created (from the `/_/` panel or a migration of test data kept out of `pkg/`), with email and password in a copy block;
+- two or three things to try, taken from the spec's First version.
+
+Ask "Does it do what you expected?". Changes go back to step 3 and are shown again. The step is done when the user says yes. If the user cannot look now, say the app is not published until they have seen it, and stop here.
+
+## 6. Closing
 
 A short message:
 - what you built: collections, screens, connections;
-- how to try it locally, if you started it;
+- how to start it again locally (the command, in a copy block);
 - what is missing: stubs, information that did not arrive, checks not done;
 - the next step: publish it on Citadel with `citadel-publish`.
