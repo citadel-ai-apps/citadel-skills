@@ -1,6 +1,6 @@
 ---
 name: citadel
-description: Step-by-step wizard for Citadel, the company platform that hosts PocketBase apps - from an empty computer to an app online. Use it when the user wants to create an app on Citadel, asks how to start, what Citadel is or what to do next, or when it is unclear which Citadel skill comes next.
+description: Step-by-step wizard for Citadel, the company platform that hosts PocketBase apps - from an empty computer to an app online. Use it when the user wants to create an app on Citadel, asks how to start, what Citadel is or what to do next, or when it is unclear which Citadel skill comes next, including when the user has no Citadel yet.
 ---
 
 # Citadel wizard
@@ -40,9 +40,18 @@ One folder holds all the user's apps, one subfolder per app. Suggest `Documents/
 
 ### Step 3 of 7: connect to Citadel
 
-Use `citadel-connect`. The first time, it follows its tutorial: the user asks the operator for a token and types it hidden in a terminal. Done when `connect.py check` is green.
+If `connect.py check` already finds a configuration, skip the question and go to "Yes" below. Otherwise ask first, with the multiple-choice question tool if there is one:
 
-Waiting for the operator does not block the wizard: the interview (step 4) works without a connection. Come back here before step 7.
+**"Do you already have a Citadel in your company?"**
+- "Yes, someone runs it": the operator gives you the access.
+- "No, I want to try it": Citadel gets installed on this computer for a trial.
+- "I don't know": treat it as "Yes" and tell the user to ask their IT team or whoever sent them here; if nobody runs one, come back and choose "No".
+
+**Yes.** Use `citadel-connect`. The first time, it follows its tutorial: the user asks the operator for a token and types it hidden in a terminal. Done when `connect.py check` is green.
+
+**No.** Use `citadel-install`: it checks the computer, installs a local Citadel with a demo app and writes an install report. Then continue with `citadel-connect` against the new local portal (`citadel-install` hands the values over). On a local Citadel the user is also the operator. Done when `connect.py check` is green.
+
+Waiting for the operator does not block the wizard: the interview (step 4) works without a connection. Come back here before step 7. The install takes a while (a VM is created and images are built): offer to do the interview while it runs.
 
 ### Step 4 of 7: describe the app
 
@@ -69,5 +78,5 @@ Use `citadel-publish`. Close with the app's address, how people get in, and any 
 ## Who does what
 
 - **The user** describes the app, tries it, publishes it and changes it.
-- **The Citadel operator** creates new apps, hands out tokens and portal passwords, and approves the connections that are not automatic, such as a service given with a wildcard. Sending email and custom addresses are not available on Citadel today.
+- **The Citadel operator** (the user themself, on a Citadel installed with `citadel-install`) creates new apps, hands out tokens and portal passwords, and approves the connections that are not automatic, such as a service given with a wildcard. Sending email and custom addresses are not available on Citadel today.
 - **Citadel** records every publication and every authorisation. If a publication fails, it puts the previous version back online by itself.

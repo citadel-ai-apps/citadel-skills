@@ -7,6 +7,7 @@ Skills to create apps to publish on Citadel, without the Citadel repo.
 | Skill | Step |
 |---|---|
 | `citadel` | entry point: what you can do and where to start |
+| `citadel-install` | installs Citadel for a trial, when there is none yet: local VM on a Mac, or a pilot on a Linux server |
 | `citadel-connect` | connects the computer to Citadel: portal, token, known apps |
 | `citadel-interview` | from the idea to the app's spec, with simple questions |
 | `citadel-new-app` | from the spec to the PocketBase package, with tests and a local check |
@@ -19,7 +20,7 @@ Skills to create apps to publish on Citadel, without the Citadel repo.
 2. **Start the wizard**: in Claude Code type `/citadel`; in Codex write `Use the citadel skill`.
 3. **Follow the steps.** The wizard works on Mac and Windows and goes from an empty computer to an app online: tools, work folder, connection with your token, interview, build, try, publish. It does the technical part; you choose, try and type your token.
 
-You need a Citadel token: ask the person who installed Citadel in your company (the operator). The wizard tells you what to ask.
+You need a Citadel token: ask the person who installed Citadel in your company (the operator). The wizard tells you what to ask. No Citadel in your company yet? Tell the wizard: `citadel-install` sets one up on your Mac for a trial and writes a report you can send to the Citadel team.
 
 The configuration is managed by `citadel-connect`. Each project can have its own environment in `.citadel/config.json`, at the repo root (excluded from git); if it is missing, the global one applies, `~/.config/citadel/config.json`. The `CITADEL_CONFIG` variable overrides both.
 

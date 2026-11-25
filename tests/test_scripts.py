@@ -179,5 +179,30 @@ class Language(unittest.TestCase):
             self.assertIn("in the user's language", text, name)
             self.assertIn("`language` setting", text, name)
 
+class Structure(unittest.TestCase):
+    """Every skill is well formed, linked for local use and listed in the README."""
+    ROOT = os.path.join(REPO, "..")
+
+    def test_frontmatter_names_match_folders(self):
+        for name in os.listdir(REPO):
+            text = open(os.path.join(REPO, name, "SKILL.md"), encoding="utf-8").read()
+            m = re.match(r"---\nname: (.+)\ndescription: (.+)\n---\n", text)
+            self.assertIsNotNone(m, f"{name}: frontmatter must be name + description")
+            self.assertEqual(m.group(1), name)
+            self.assertIn("Use it when", m.group(2), f"{name}: description must say when to use it")
+
+    def test_linked_and_listed(self):
+        readme = open(os.path.join(self.ROOT, "README.md"), encoding="utf-8").read()
+        for name in os.listdir(REPO):
+            self.assertIn(f"| `{name}` |", readme, f"{name}: missing from the README skills table")
+            link = os.path.join(self.ROOT, ".claude", "skills", name)
+            self.assertTrue(os.path.isfile(os.path.join(link, "SKILL.md")), f"{name}: .claude/skills link missing")
+
+    def test_wizard_offers_install(self):
+        text = open(os.path.join(REPO, "citadel", "SKILL.md"), encoding="utf-8").read()
+        ask = text.index("Do you already have a Citadel in your company?")
+        self.assertLess(ask, text.index("Step 4 of 7"))
+        self.assertIn("`citadel-install`", text[ask:])
+
 if __name__ == "__main__":
     unittest.main()
