@@ -123,7 +123,7 @@ def multipart(field, filename, data):
 
 
 HINTS = {
-    401: "token not valid or expired: ask the operator for a new one",
+    401: "token not valid, expired or revoked: create a new one on the portal's tokens page",
     403: "your role on this app cannot publish: ask the operator for the deployer role",
     404: "the app does not exist, or this token has no access to it: ask the operator",
     409: "the app is busy or frozen (an upgrade or another deploy is running, or an operator froze it)",

@@ -13,7 +13,7 @@ description: Publishes an app already built for Citadel. Uploads the package, de
 
 Three values are needed: the Citadel portal address (`url`), a personal token (`token`), the apps domain (`apps_domain`, for example `apps.company.com`; in development it may include the scheme, `http://apps.localhost`). The script reads them from the variables `CITADEL_URL`, `CITADEL_TOKEN` and `CITADEL_APPS_DOMAIN`, or from the `citadel-connect` configuration file: the project one (`.citadel/config.json`, the nearest going up from the package folder to the repo root) or, if missing, the global one (`~/.config/citadel/config.json`).
 
-If they are missing, use `citadel-connect`. The **token is saved by the user**: they get it from the Citadel operator and type it hidden with `connect.py set-token`. Its value stays out of the chat and out of every output.
+If they are missing, use `citadel-connect`. The **token is saved by the user**: they create it on the portal's tokens page (`<portal>/tokens`) and type it hidden with `connect.py set-token`. Its value stays out of the chat and out of every output.
 
 ## 2. Package and app
 

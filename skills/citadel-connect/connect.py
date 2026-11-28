@@ -153,7 +153,7 @@ def explain(st, body):
     if st == 403:
         return FORBIDDEN
     if st == 401:
-        return "token not valid or expired: ask the operator for a new one"
+        return "token not valid, expired or revoked: create a new one on the portal's tokens page"
     if isinstance(body, bytes):
         try:
             body = json.loads(body)

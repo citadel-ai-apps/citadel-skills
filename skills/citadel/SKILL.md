@@ -47,7 +47,7 @@ If `connect.py check` already finds a configuration, skip the question and go to
 - "No, I want to try it": Citadel gets installed on this computer for a trial.
 - "I don't know": treat it as "Yes" and tell the user to ask their IT team or whoever sent them here; if nobody runs one, come back and choose "No".
 
-**Yes.** Use `citadel-connect`. The first time, it follows its tutorial: the user asks the operator for a token and types it hidden in a terminal. Done when `connect.py check` is green.
+**Yes.** Use `citadel-connect`. The first time, it follows its tutorial: the user creates their token on the portal's tokens page and types it hidden in a terminal. Done when `connect.py check` is green.
 
 **No.** Use `citadel-install`: it checks the computer, installs a local Citadel with a demo app and writes an install report. Then continue with `citadel-connect` against the new local portal (`citadel-install` hands the values over). On a local Citadel the user is also the operator. Done when `connect.py check` is green.
 
@@ -78,5 +78,5 @@ Use `citadel-publish`. Close with the app's address, how people get in, and any 
 ## Who does what
 
 - **The user** describes the app, tries it, publishes it and changes it.
-- **The Citadel operator** (the user themself, on a Citadel installed with `citadel-install`) creates new apps, hands out tokens and portal passwords, and approves the connections that are not automatic, such as a service given with a wildcard. Sending email and custom addresses are not available on Citadel today.
+- **The Citadel operator** (the user themself, on a Citadel installed with `citadel-install`) creates new apps and hands out portal passwords (users create their own tokens on the portal), and approves the connections that are not automatic, such as a service given with a wildcard. Sending email and custom addresses are not available on Citadel today.
 - **Citadel** records every publication and every authorisation. If a publication fails, it puts the previous version back online by itself.
